@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+# Test suite for scripts/tools/graph-callers.sh (codebase-memory-mcp engine)
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(dirname "$SCRIPT_DIR")"
+TOOL="$ROOT_DIR/scripts/tools/graph-callers.sh"
+
+source "$SCRIPT_DIR/test-helpers.sh"
+
+echo "=== graph-callers.sh tests ==="
+echo ""
+
+FIXTURE="$(mktemp -d)"
+trap 'rm -rf "$FIXTURE"' EXIT
+
+# --- Invocation error: missing --symbol ---
+set +e
+"$TOOL" --repo "$FIXTURE" >/dev/null 2>&1
+rc=$?
+set -e
+assert "Missing --symbol → exit 1" "$([[ "$rc" == "1" ]] && echo true || echo false)"
+
+# --- Fallback: engine disabled ---
+set +e
+out="$(DRAFT_MEMORY_DISABLE=1 "$TOOL" --repo "$FIXTURE" --symbol foo)"
+rc=$?
+set -e
+assert "Exit 2 when engine unavailable" "$([[ "$rc" == "2" ]] && echo true || echo false)"
+if command -v jq >/dev/null 2>&1; then
+    assert "Fallback emits {callers:[], source:unavailable}" \
+        "$(echo "$out" | jq -e '.callers == [] and .source == "unavailable"' >/dev/null 2>&1 && echo true || echo false)"
+
+    assert "Fallback carries status:unavailable" \
+        "$(echo "$out" | jq -e '.status == "unavailable"' >/dev/null 2>&1 && echo true || echo false)"
+
+    # --- Happy path via mock engine ---
+    MOCK="$(make_mock_memory_engine "$FIXTURE/mockbin")"
+    out2="$(DRAFT_MEMORY_BIN="$MOCK" "$TOOL" --repo "$FIXTURE" --symbol foo)"
+    assert "Mock engine yields callers (source=memory-graph)" \
+        "$(echo "$out2" | jq -e '.source == "memory-graph" and (.callers | length >= 1)' >/dev/null 2>&1 && echo true || echo false)"
+    assert "Direct callers carry a fail-loud status" \
+        "$(echo "$out2" | jq -e '.status == "ok"' >/dev/null 2>&1 && echo true || echo false)"
+
+    # --- Transitive callers via the trace_path expander (mock) ---
+    out3="$(DRAFT_MEMORY_BIN="$MOCK" "$TOOL" --repo "$FIXTURE" --symbol foo --transitive=2)"
+    assert "Transitive callers include a hop field" \
+        "$(echo "$out3" | jq -e '.source == "memory-graph" and (.callers[0] | has("hop"))' >/dev/null 2>&1 && echo true || echo false)"
+
+    # --- prod-only is accepted and still resolves via the mock ---
+    out4="$(DRAFT_MEMORY_BIN="$MOCK" "$TOOL" --repo "$FIXTURE" --symbol foo --prod-only)"
+    assert "--prod-only resolves (source=memory-graph)" \
+        "$(echo "$out4" | jq -e '.source == "memory-graph"' >/dev/null 2>&1 && echo true || echo false)"
+
+    # --- An already-indexed repo is refreshed before the live query ---
+    # Querying the first index ever taken answered post-edit questions from the
+    # pre-edit graph while still reporting status:"ok".
+    FRESH_MOCK="$FIXTURE/freshbin/codebase-memory-mcp"
+    mkdir -p "$FIXTURE/freshbin"
+    cat > "$FRESH_MOCK" <<'MOCK'
+#!/usr/bin/env bash
+if [[ "$1" == "--version" ]]; then echo "codebase-memory-mcp 0.0.0-mock"; exit 0; fi
+echo "$2" >> "$CALLS_LOG"
+case "$2" in
+  list_projects)    printf '{"projects":[{"name":"known","root_path":"%s"}]}\n' "$REPO_UNDER_TEST" ;;
+  index_repository) echo '{"project":"known","status":"indexed"}' ;;
+  query_graph)      echo '{"columns":["caller","file"],"rows":[["bar","a.sh"]],"total":1}' ;;
+  *) echo '{}' ;;
+esac
+MOCK
+    chmod +x "$FRESH_MOCK"
+    CALLS_LOG="$FIXTURE/fresh-calls.log" REPO_UNDER_TEST="$FIXTURE" DRAFT_MEMORY_BIN="$FRESH_MOCK" \
+        "$TOOL" --repo "$FIXTURE" --symbol foo >/dev/null 2>&1 || true
+    assert "already-indexed repo is re-indexed before querying" \
+        "$([[ "$(grep -m1 -xE 'index_repository|query_graph' "$FIXTURE/fresh-calls.log" 2>/dev/null)" == "index_repository" ]] && echo true || echo false)"
+fi
+
+# --- gq_escape unit checks: quotes AND backslashes must be escaped ---
+# A trailing backslash left unescaped turns into `\'` inside the Cypher string
+# literal — an escaped quote that never closes the string.
+GQ_ESC_QUOTE="$(source "$ROOT_DIR/scripts/tools/_graph_queries.sh"; gq_escape "a'b")"
+assert "gq_escape escapes single quotes" \
+    "$([[ "$GQ_ESC_QUOTE" == "a\\'b" ]] && echo true || echo false)"
+GQ_ESC_BSLASH="$(source "$ROOT_DIR/scripts/tools/_graph_queries.sh"; gq_escape 'x\')"
+assert "gq_escape escapes backslashes" \
+    "$([[ "$GQ_ESC_BSLASH" == 'x\\' ]] && echo true || echo false)"
+
+echo ""
+echo "=== Results: $PASS passed, $FAIL failed ==="
+exit "$FAIL"

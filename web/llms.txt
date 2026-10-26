@@ -1,0 +1,64 @@
+# Draft
+
+> Code intelligence built into your AI coding agent. Free, open-source, MIT.
+
+Draft is a plugin that adds a knowledge graph engine, spec-driven planning, and a three-stage review pipeline to AI coding agents — so they stop guessing and start executing pre-approved work, grounded in real understanding of your codebase.
+
+Draft is created and maintained by Mayur Pise (https://github.com/mayurpise). It works with Claude Code, Cursor, Codex, opencode, GitHub Copilot, and Google Gemini. It provides 33 slash commands, 7 specialized agents, 14-dimension bug hunting, ACID-style module audits, and a built-in **knowledge graph engine** (codebase-memory-mcp: tree-sitter + LSP, 159 languages, 100% local) with query tools — callers, impact, hotspots, modules, cycles, mermaid.
+
+## Installation
+
+Install with the npm CLI (host = claude-code | cursor | codex | opencode):
+
+```
+npx @drafthq/draft install <host>          # claude-code | cursor | codex | opencode
+# --global default: claude-code, cursor
+# --project default: codex, opencode
+# or: npm install -g @drafthq/draft && draft install <host>
+```
+
+For Claude Code you can alternatively use the native marketplace (`/plugin marketplace add drafthq/draft` then `/plugin install draft`). GitHub Copilot and Gemini read a committed instructions file copied directly from the repo. See the getting started guide.
+
+## Core Workflow
+
+0. `/draft:review` — Works with zero setup on an un-indexed repo. Start here.
+1. `/draft:init` — Analyze codebase, generate context files, build the knowledge graph
+2. `/draft:plan` — Collaborative spec and plan creation (routes to specialist commands)
+3. `/draft:implement` — TDD execution with checkpoints
+4. `/draft:review` — Three-stage code review, now with graph-backed structural checks
+
+## Key Concepts
+
+- **Context-Driven Development (CDD):** Structured documents constrain and guide AI behavior
+- **Tracks:** Isolated units of work with spec.md, plan.md, metadata.json (now includes blast-radius impact memory)
+- **7 Specialized Agents:** Architect, Debugger, Planner, Reviewer, RCA, Ops, Writer
+- **ACID Compliance:** Enterprise-grade module lifecycle audits
+- **Incremental Refresh:** File-hash-based re-analysis of only changed files
+- **Init Output Modes:** `/draft:init` is tier-gated (`DRAFT_INIT_MODE`). `monolith` (small repos) keeps a single graph-primary architecture.md; `okf` (larger repos) emits an OKF concept taxonomy under `draft/wiki/` as the source of truth, with .ai-context.md as the index root and a generated architecture.md view.
+- **Knowledge Graph Engine:** codebase-memory-mcp: tree-sitter + LSP, 159 languages, 100% local. Query tools: callers, callees, impact, cycles, hotspots, mermaid. Incremental, git-aware indexing.
+- **Zero-Setup Review:** `/draft:review` does not require `/draft:init`. With no `draft/` directory it resolves scope from git, runs automated validation plus the four code-quality dimensions, renders the report inline without writing to the repo, and names the checks it could not run (blast radius, callers, cycles, module boundaries). Indexing is an upgrade, not a prerequisite.
+- **Deterministic Tools:** 53 shell helpers under `scripts/tools/` for mechanical work — git metadata, file classification, hotspot ranking, freshness checks, ADR indexing, citation verification. Graph wrappers fail loud: shapeless `{}` is `unavailable`, not a measured empty result.
+- **Installer scopes:** `draft install` defaults to `--global` for claude-code and cursor, `--project` for codex and opencode.
+
+## Graph Engine
+
+Draft's knowledge graph is powered by [codebase-memory-mcp](https://github.com/DeusData/codebase-memory-mcp) by [DeusData](https://github.com/DeusData) — a tree-sitter + LSP-grade, 159-language, 100% local graph engine with no API key required. Fetched and checksum-verified on install. The `/draft:graph` command builds the `draft/graph` snapshot.
+
+## Links
+
+- Homepage: https://getdraft.dev
+- Book: https://getdraft.dev/book/
+- Getting Started: https://getdraft.dev/book/getting-started/
+- Command Reference: https://getdraft.dev/book/command-reference/
+- GitHub: https://github.com/drafthq/draft
+- Graph Engine: https://github.com/DeusData/codebase-memory-mcp
+- Methodology: https://github.com/drafthq/draft/blob/main/core/methodology.md
+- Full LLM context: https://getdraft.dev/llms-full.txt
+
+## Author
+
+Mayur Pise — https://github.com/mayurpise · https://www.linkedin.com/in/mayurpise/ · mayur@getdraft.dev
+
+## License
+
+MIT License. Free forever. Copyright (c) 2025-2026 Mayur Pise.

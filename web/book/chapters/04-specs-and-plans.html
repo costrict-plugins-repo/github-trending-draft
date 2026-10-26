@@ -1,0 +1,354 @@
+<div class="chapter-wrapper">
+    <h1>Specs &amp; Plans</h1>
+    <p class="chapter-meta"><span class="part-name">Part II: Track Lifecycle</span> &middot; Chapter 4</p>
+    <p class="read-time">6 min read</p>
+
+    <p class="chapter-intro">Your team just decided to redesign the authentication system. Someone opens a chat window, types "add OAuth2 support," and the AI starts generating code. Forty minutes later you have 2,000 lines across 15 files, none of which match your existing auth patterns, half of which introduce dependencies your team has never approved. The code works in isolation. It is completely unusable. Draft's track creation process exists to make this scenario structurally impossible.</p>
+
+    <div class="figure">
+        <div class="figure-content">
+            <svg viewBox="0 0 700 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">
+                <defs>
+                    <filter id="sh08" x="-2%" y="-10%" width="104%" height="130%"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.08"/></filter>
+                </defs>
+                <!-- Pipeline boxes -->
+                <rect x="10" y="30" width="120" height="56" rx="10" fill="#f8f9fa" stroke="#e2e8f0" stroke-width="1.5" filter="url(#sh08)"/>
+                <text x="70" y="54" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#718096">Requirements</text>
+                <text x="70" y="72" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" font-weight="bold" fill="#1a1a2e">Intake</text>
+                <!-- Arrow 1 -->
+                <path d="M135 58 L175 58" stroke="#2563eb" stroke-width="2" fill="none" marker-end="url(#arrow08)"/>
+                <defs><marker id="arrow08" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb"/></marker></defs>
+                <!-- Spec -->
+                <rect x="180" y="30" width="120" height="56" rx="10" fill="#eff6ff" stroke="#2563eb" stroke-width="1.5" filter="url(#sh08)"/>
+                <text x="240" y="54" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#718096">What to build</text>
+                <text x="240" y="72" text-anchor="middle" font-family="Arial,sans-serif" font-size="14" font-weight="bold" fill="#2563eb">spec.md</text>
+                <!-- Arrow 2 -->
+                <path d="M305 58 L345 58" stroke="#7c3aed" stroke-width="2" fill="none" marker-end="url(#arrow08b)"/>
+                <defs><marker id="arrow08b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#7c3aed"/></marker></defs>
+                <!-- Plan -->
+                <rect x="350" y="30" width="120" height="56" rx="10" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5" filter="url(#sh08)"/>
+                <text x="410" y="54" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#718096">How to build</text>
+                <text x="410" y="72" text-anchor="middle" font-family="Arial,sans-serif" font-size="14" font-weight="bold" fill="#7c3aed">plan.md</text>
+                <!-- Arrow 3 -->
+                <path d="M475 58 L515 58" stroke="#059669" stroke-width="2" fill="none" marker-end="url(#arrow08c)"/>
+                <defs><marker id="arrow08c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#059669"/></marker></defs>
+                <!-- Phases -->
+                <rect x="520" y="16" width="80" height="34" rx="8" fill="#ecfdf5" stroke="#059669" stroke-width="1.5" filter="url(#sh08)"/>
+                <text x="560" y="38" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" font-weight="bold" fill="#059669">Phases</text>
+                <!-- Tasks -->
+                <rect x="520" y="66" width="80" height="34" rx="8" fill="#ecfdf5" stroke="#059669" stroke-width="1.5" filter="url(#sh08)"/>
+                <text x="560" y="88" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" font-weight="bold" fill="#059669">Tasks</text>
+                <!-- Arrow to commits -->
+                <path d="M605 50 L635 50" stroke="#1a1a2e" stroke-width="2" fill="none" marker-end="url(#arrow08d)"/>
+                <defs><marker id="arrow08d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1a1a2e"/></marker></defs>
+                <rect x="638" y="30" width="55" height="56" rx="10" fill="#f8f9fa" stroke="#e2e8f0" stroke-width="1.5" filter="url(#sh08)"/>
+                <text x="665" y="54" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#718096">1 task =</text>
+                <text x="665" y="72" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" font-weight="bold" fill="#1a1a2e">1 commit</text>
+            </svg>
+        </div>
+        <div class="figure-caption">The spec-to-plan pipeline: requirements flow through a structured intake into a specification (what), then a plan (how), decomposed into phases and tasks, each producing a single commit.</div>
+    </div>
+
+    <h2>Starting a Track</h2>
+    <p>Every unit of work in Draft &mdash; a feature, a bug fix, a refactor &mdash; begins with <code>/draft:plan</code> (which orchestrates planning and routes to the specialist <code>/draft:new-track</code> workflow). This command does not generate code. It starts a <strong>collaborative intake process</strong> between you and the AI, producing two artifacts that govern everything that follows: a specification and a plan.</p>
+
+    <pre class="terminal"><code>$ /draft:plan Add OAuth2 support for third-party login</code></pre>
+
+    <p>The AI reads your project's <code>product.md</code>, <code>tech-stack.md</code>, <code>.ai-context.md</code>, and <code>workflow.md</code> before asking a single question. It arrives at the conversation already understanding your architecture, your constraints, and your conventions. Then the intake begins.</p>
+
+    <h2>The Intake Conversation</h2>
+    <p>Draft's intake is not a form. It is a structured dialogue where the AI acts as an <strong>expert partner</strong>, not a passive recorder. For each question, the AI asks, listens, and then contributes &mdash; surfacing patterns you might not have considered, risks you haven't named, and trade-offs between approaches.</p>
+
+    <p>The conversation moves through five phases:</p>
+
+    <ol>
+        <li><strong>Existing Documentation</strong> &mdash; Do you have a PRD, RFC, or design doc? The AI ingests it, extracts key points, and identifies gaps: "I've extracted the authentication flow and token lifecycle. I notice the doc doesn't cover token revocation."</li>
+        <li><strong>Problem Space</strong> &mdash; What problem are we solving? Why now? Who experiences the pain? What's the scope boundary? After each answer, the AI challenges assumptions with "why" questions and contributes domain knowledge.</li>
+        <li><strong>Solution Space</strong> &mdash; What's the simplest version? Why this approach over alternatives? The AI presents 2&ndash;3 alternative approaches with trade-offs, cross-references your architecture document for integration points, and suggests patterns from your tech stack to leverage.</li>
+        <li><strong>Risk &amp; Constraints</strong> &mdash; What could go wrong? What dependencies exist? The AI surfaces risks you may not have considered, referencing OWASP guidelines, distributed systems fallacies, and known failure modes.</li>
+        <li><strong>Success Criteria</strong> &mdash; How do we know this is complete? The AI suggests measurable, testable acceptance criteria aligned with your product goals.</li>
+    </ol>
+
+    <div class="callout callout-concept">
+        <div class="callout-title">One Question at a Time</div>
+        <p>The AI never dumps a questionnaire. It asks one question, processes the answer, contributes its expertise, updates the draft specification, and then moves on. Each exchange builds on the last. This is a conversation, not a form submission.</p>
+    </div>
+
+    <p>Throughout the intake, the AI grounds its advice in vetted sources. When it recommends CQRS, it cites "DDIA, Ch. 11." When it warns about access control, it references "OWASP A01:2021." When it suggests a circuit breaker, it cites "Release It!" This is not decoration &mdash; it gives you a reference to evaluate the advice independently.</p>
+
+    <div class="figure">
+        <div class="figure-content">
+            <svg viewBox="0 0 700 620" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:700px;height:auto;display:block;margin:0 auto;">
+                <defs>
+                    <filter id="sh08i" x="-2%" y="-2%" width="104%" height="106%"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.08"/></filter>
+                    <marker id="arrow08i" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb"/></marker>
+                </defs>
+
+                <!-- Phase 1: Existing Documentation -->
+                <rect x="180" y="20" width="340" height="80" rx="12" fill="#eff6ff" stroke="#2563eb" stroke-width="1.5" filter="url(#sh08i)"/>
+                <!-- Document icon -->
+                <rect x="200" y="40" width="28" height="36" rx="3" fill="none" stroke="#2563eb" stroke-width="1.5"/>
+                <path d="M208 48 L220 48 M208 54 L220 54 M208 60 L218 60" stroke="#2563eb" stroke-width="1.2" fill="none"/>
+                <path d="M220 40 L228 48 L220 48 Z" fill="#bfdbfe" stroke="#2563eb" stroke-width="1"/>
+                <text x="244" y="50" font-family="Arial,sans-serif" font-size="13" font-weight="bold" fill="#1e40af">Phase 1: Existing Documentation</text>
+                <text x="244" y="68" font-family="Arial,sans-serif" font-size="11" fill="#64748b">Read PRDs, RFCs, design docs</text>
+                <text x="244" y="82" font-family="Arial,sans-serif" font-size="10" fill="#94a3b8">Extract key points, identify gaps</text>
+                <!-- Dialogue indicator -->
+                <rect x="530" y="38" width="70" height="24" rx="12" fill="#dbeafe" stroke="#93c5fd" stroke-width="1"/>
+                <text x="544" y="44" font-family="Arial,sans-serif" font-size="8" fill="#3b82f6">AI</text>
+                <text x="558" y="44" font-family="Arial,sans-serif" font-size="8" fill="#64748b">&harr;</text>
+                <text x="572" y="44" font-family="Arial,sans-serif" font-size="8" fill="#1e40af">Dev</text>
+                <rect x="530" y="52" width="70" height="8" rx="4" fill="#bfdbfe"/>
+                <rect x="530" y="52" width="50" height="8" rx="4" fill="#3b82f6" opacity="0.6"/>
+
+                <!-- Arrow 1→2 -->
+                <path d="M350 100 L350 130" stroke="#2563eb" stroke-width="2" fill="none" marker-end="url(#arrow08i)"/>
+
+                <!-- Phase 2: Problem Space -->
+                <rect x="180" y="136" width="340" height="80" rx="12" fill="#faf5ff" stroke="#7c3aed" stroke-width="1.5" filter="url(#sh08i)"/>
+                <!-- Magnifying glass icon -->
+                <circle cx="213" cy="165" r="11" fill="none" stroke="#7c3aed" stroke-width="1.5"/>
+                <path d="M221 173 L229 181" stroke="#7c3aed" stroke-width="2" stroke-linecap="round"/>
+                <text x="244" y="166" font-family="Arial,sans-serif" font-size="13" font-weight="bold" fill="#5b21b6">Phase 2: Problem Space</text>
+                <text x="244" y="184" font-family="Arial,sans-serif" font-size="11" fill="#64748b">Why? Who? Scope boundary?</text>
+                <text x="244" y="198" font-family="Arial,sans-serif" font-size="10" fill="#94a3b8">Challenge assumptions with "why" questions</text>
+                <!-- Dialogue indicator -->
+                <rect x="530" y="154" width="70" height="24" rx="12" fill="#f3e8ff" stroke="#c4b5fd" stroke-width="1"/>
+                <text x="544" y="160" font-family="Arial,sans-serif" font-size="8" fill="#7c3aed">AI</text>
+                <text x="558" y="160" font-family="Arial,sans-serif" font-size="8" fill="#64748b">&harr;</text>
+                <text x="572" y="160" font-family="Arial,sans-serif" font-size="8" fill="#5b21b6">Dev</text>
+                <rect x="530" y="168" width="70" height="8" rx="4" fill="#e9d5ff"/>
+                <rect x="530" y="168" width="55" height="8" rx="4" fill="#7c3aed" opacity="0.6"/>
+
+                <!-- Arrow 2→3 -->
+                <path d="M350 216 L350 246" stroke="#7c3aed" stroke-width="2" fill="none" marker-end="url(#arrow08i)"/>
+
+                <!-- Phase 3: Solution Space -->
+                <rect x="180" y="252" width="340" height="80" rx="12" fill="#fffbeb" stroke="#d97706" stroke-width="1.5" filter="url(#sh08i)"/>
+                <!-- Lightbulb icon -->
+                <ellipse cx="213" cy="276" rx="10" ry="12" fill="none" stroke="#d97706" stroke-width="1.5"/>
+                <path d="M207 288 L219 288" stroke="#d97706" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M209 292 L217 292" stroke="#d97706" stroke-width="1.2" stroke-linecap="round"/>
+                <path d="M213 264 L213 260" stroke="#d97706" stroke-width="1.2" stroke-linecap="round"/>
+                <path d="M222 268 L226 264" stroke="#d97706" stroke-width="1.2" stroke-linecap="round"/>
+                <path d="M204 268 L200 264" stroke="#d97706" stroke-width="1.2" stroke-linecap="round"/>
+                <text x="244" y="282" font-family="Arial,sans-serif" font-size="13" font-weight="bold" fill="#b45309">Phase 3: Solution Space</text>
+                <text x="244" y="300" font-family="Arial,sans-serif" font-size="11" fill="#64748b">Approaches, trade-offs, alternatives</text>
+                <text x="244" y="314" font-family="Arial,sans-serif" font-size="10" fill="#94a3b8">2-3 options with cross-referenced patterns</text>
+                <!-- Dialogue indicator -->
+                <rect x="530" y="270" width="70" height="24" rx="12" fill="#fef3c7" stroke="#fcd34d" stroke-width="1"/>
+                <text x="544" y="276" font-family="Arial,sans-serif" font-size="8" fill="#d97706">AI</text>
+                <text x="558" y="276" font-family="Arial,sans-serif" font-size="8" fill="#64748b">&harr;</text>
+                <text x="572" y="276" font-family="Arial,sans-serif" font-size="8" fill="#b45309">Dev</text>
+                <rect x="530" y="284" width="70" height="8" rx="4" fill="#fde68a"/>
+                <rect x="530" y="284" width="60" height="8" rx="4" fill="#d97706" opacity="0.6"/>
+
+                <!-- Arrow 3→4 -->
+                <path d="M350 332 L350 362" stroke="#d97706" stroke-width="2" fill="none" marker-end="url(#arrow08i)"/>
+
+                <!-- Phase 4: Risk & Constraints -->
+                <rect x="180" y="368" width="340" height="80" rx="12" fill="#fff1f2" stroke="#e11d48" stroke-width="1.5" filter="url(#sh08i)"/>
+                <!-- Shield icon -->
+                <path d="M213 388 L201 396 L201 408 Q201 420 213 424 Q225 420 225 408 L225 396 Z" fill="none" stroke="#e11d48" stroke-width="1.5"/>
+                <path d="M209 404 L213 408 L221 398" stroke="#e11d48" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                <text x="244" y="398" font-family="Arial,sans-serif" font-size="13" font-weight="bold" fill="#be123c">Phase 4: Risk &amp; Constraints</text>
+                <text x="244" y="416" font-family="Arial,sans-serif" font-size="11" fill="#64748b">What could go wrong? Dependencies?</text>
+                <text x="244" y="430" font-family="Arial,sans-serif" font-size="10" fill="#94a3b8">OWASP, failure modes, blast radius</text>
+                <!-- Dialogue indicator -->
+                <rect x="530" y="386" width="70" height="24" rx="12" fill="#ffe4e6" stroke="#fda4af" stroke-width="1"/>
+                <text x="544" y="392" font-family="Arial,sans-serif" font-size="8" fill="#e11d48">AI</text>
+                <text x="558" y="392" font-family="Arial,sans-serif" font-size="8" fill="#64748b">&harr;</text>
+                <text x="572" y="392" font-family="Arial,sans-serif" font-size="8" fill="#be123c">Dev</text>
+                <rect x="530" y="400" width="70" height="8" rx="4" fill="#fecdd3"/>
+                <rect x="530" y="400" width="45" height="8" rx="4" fill="#e11d48" opacity="0.6"/>
+
+                <!-- Arrow 4→5 -->
+                <path d="M350 448 L350 478" stroke="#e11d48" stroke-width="2" fill="none" marker-end="url(#arrow08i)"/>
+
+                <!-- Phase 5: Success Criteria -->
+                <rect x="180" y="484" width="340" height="80" rx="12" fill="#ecfdf5" stroke="#059669" stroke-width="1.5" filter="url(#sh08i)"/>
+                <!-- Checkmark icon -->
+                <circle cx="213" cy="522" r="13" fill="none" stroke="#059669" stroke-width="1.5"/>
+                <path d="M205 522 L211 528 L223 514" stroke="#059669" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                <text x="244" y="514" font-family="Arial,sans-serif" font-size="13" font-weight="bold" fill="#047857">Phase 5: Success Criteria</text>
+                <text x="244" y="532" font-family="Arial,sans-serif" font-size="11" fill="#64748b">How do we know it's done?</text>
+                <text x="244" y="546" font-family="Arial,sans-serif" font-size="10" fill="#94a3b8">Measurable, testable acceptance criteria</text>
+                <!-- Dialogue indicator -->
+                <rect x="530" y="502" width="70" height="24" rx="12" fill="#d1fae5" stroke="#6ee7b7" stroke-width="1"/>
+                <text x="544" y="508" font-family="Arial,sans-serif" font-size="8" fill="#059669">AI</text>
+                <text x="558" y="508" font-family="Arial,sans-serif" font-size="8" fill="#64748b">&harr;</text>
+                <text x="572" y="508" font-family="Arial,sans-serif" font-size="8" fill="#047857">Dev</text>
+                <rect x="530" y="516" width="70" height="8" rx="4" fill="#a7f3d0"/>
+                <rect x="530" y="516" width="70" height="8" rx="4" fill="#059669" opacity="0.6"/>
+
+                <!-- Output arrow -->
+                <path d="M350 564 L350 594" stroke="#059669" stroke-width="2" fill="none" marker-end="url(#arrow08i)"/>
+                <rect x="290" y="596" width="120" height="28" rx="14" fill="#1a1a2e" filter="url(#sh08i)"/>
+                <text x="350" y="614" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" font-weight="bold" fill="#ffffff">spec.md</text>
+
+                <!-- Left bracket label -->
+                <text x="160" y="330" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#94a3b8" transform="rotate(-90,160,330)">Structured Dialogue</text>
+                <path d="M170 50 Q165 50 165 55 L165 595 Q165 600 170 600" stroke="#e2e8f0" stroke-width="1.5" fill="none"/>
+            </svg>
+        </div>
+        <div class="figure-caption">The 5-phase intake flow: each phase is a structured AI-developer dialogue, progressing from documentation review through problem and solution analysis, risk assessment, and finally success criteria definition. The output feeds directly into spec.md.</div>
+    </div>
+
+    <h2>Bug and RCA Intake</h2>
+    <p>Bug tracks use a different intake flow, tighter in scope and focused on investigation. The AI walks through four phases: <strong>Symptoms &amp; Context</strong> (exact error, who's affected, when it started), <strong>Reproduction</strong> (exact steps, environment, expected vs. actual), <strong>Blast Radius</strong> (what still works, where the failure boundary lies), and <strong>Code Locality</strong> (suspected location, entry and failure points). The result is a bug specification with reproduction steps, blast radius assessment, and a root cause hypothesis.</p>
+
+    <h2>The Elicitation Pass</h2>
+    <p>Before the specification is finalized, the AI offers a quick stress-test &mdash; three challenge techniques selected based on the track type. For feature tracks, you can choose a <strong>Pre-mortem</strong> ("It's six months later and this feature failed &mdash; what went wrong?"), a <strong>Scope Boundary</strong> check ("What's the smallest version that still achieves the core goal?"), or an <strong>Edge Case Storm</strong> that surfaces five boundary conditions not yet in the acceptance criteria. This takes two minutes and often catches blind spots that would otherwise surface during implementation.</p>
+
+    <h2>What Gets Generated</h2>
+    <p>The intake conversation produces two files and one metadata record, all stored in <code>draft/tracks/&lt;track-id&gt;/</code>.</p>
+
+    <h3>spec.md</h3>
+    <p>The specification captures everything decided during intake: problem statement, background, functional and non-functional requirements, acceptance criteria, non-goals, technical approach, success metrics, stakeholder approvals, risk assessment, and deployment strategy. It includes YAML frontmatter linking the spec to the exact git commit at which it was created.</p>
+
+    <pre data-file="draft/tracks/add-oauth2/spec.md"><code># Specification: Add OAuth2 Support
+
+| Field | Value |
+|-------|-------|
+| **Branch** | `main` → `origin/main` |
+| **Commit** | `a1b2c3d` — feat: add user profile page |
+| **Generated** | 2026-03-30T14:22:00Z |
+
+**Track ID:** add-oauth2
+**Status:** [x] Complete
+
+## Problem Statement
+Users must create a new account to use the platform. Third-party
+login via Google and GitHub would reduce onboarding friction.
+
+## Requirements
+### Functional
+1. Users can authenticate via Google OAuth2
+2. Users can authenticate via GitHub OAuth2
+3. Linked accounts are visible in user profile settings
+
+### Non-Functional
+1. Token refresh must complete in &lt;100ms at p95
+2. Authentication failure must never expose internal errors
+
+## Acceptance Criteria
+- [ ] Google OAuth2 login flow completes end-to-end
+- [ ] GitHub OAuth2 login flow completes end-to-end
+- [ ] Existing email/password login remains unaffected
+- [ ] Token revocation removes all associated sessions
+- [ ] Rate limiting applied to OAuth callback endpoint
+
+## Non-Goals
+- No Apple Sign-In (future track)
+- No SAML/enterprise SSO
+- No migration of existing accounts to OAuth-only</code></pre>
+
+    <h3>plan.md</h3>
+    <p>The plan breaks the specification into <strong>phases</strong>, and each phase into <strong>tasks</strong>. Tasks are ordered by dependency &mdash; the AI uses topological sorting to determine implementation order, placing leaf dependencies first.</p>
+
+    <pre data-file="draft/tracks/add-oauth2/plan.md"><code># Plan: Add OAuth2 Support
+
+**Track ID:** add-oauth2
+**Spec:** ./spec.md
+
+## Phase 1: Foundation
+
+**Goal:** Core OAuth2 infrastructure and data model
+**Verification:** Unit tests pass for token handling and user linking
+
+### Tasks
+
+- [ ] **Task 1.1:** Create OAuth provider configuration schema
+- [ ] **Task 1.2:** Add `linked_accounts` table migration
+- [ ] **Task 1.3:** Implement token exchange service with refresh logic
+- [ ] **Task 1.4:** Write unit tests for token exchange
+
+## Phase 2: Provider Integration
+
+**Goal:** Working Google and GitHub login flows
+**Verification:** Integration tests pass for both providers
+
+### Tasks
+
+- [ ] **Task 2.1:** Implement Google OAuth2 callback handler
+- [ ] **Task 2.2:** Implement GitHub OAuth2 callback handler
+- [ ] **Task 2.3:** Add rate limiting to callback endpoints
+- [ ] **Task 2.4:** Write integration tests for both providers
+
+## Phase 3: User Experience
+
+**Goal:** Profile UI and session management
+**Verification:** End-to-end tests pass, manual QA complete
+
+### Tasks
+
+- [ ] **Task 3.1:** Add linked accounts section to profile settings
+- [ ] **Task 3.2:** Implement token revocation and session cleanup
+- [ ] **Task 3.3:** Write end-to-end tests for login and revocation</code></pre>
+
+    <p>Each task is designed to be completable in a focused session, produce testable output, and fit in a single commit. The Planner Agent explicitly rejects vague tasks like "implement the feature" &mdash; every task must have clear success criteria.</p>
+
+    <h3>metadata.json</h3>
+    <p>The metadata file tracks machine-readable state: track type, status, timestamps, and progress counters.</p>
+
+    <pre data-file="draft/tracks/add-oauth2/metadata.json"><code>{
+  "id": "add-oauth2",
+  "title": "Add OAuth2 Support",
+  "type": "feature",
+  "status": "planning",
+  "created": "2026-03-30T14:22:00Z",
+  "updated": "2026-03-30T14:45:00Z",
+  "phases": {
+    "total": 3,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 11,
+    "completed": 0
+  }
+}</code></pre>
+
+    <h2>Status Markers</h2>
+    <p>Every task in a plan carries a status marker that tracks its lifecycle:</p>
+    <ul>
+        <li><code>[ ]</code> <strong>Pending</strong> &mdash; not yet started</li>
+        <li><code>[~]</code> <strong>In Progress</strong> &mdash; currently being implemented</li>
+        <li><code>[x]</code> <strong>Completed</strong> &mdash; implemented, tested, and committed</li>
+        <li><code>[!]</code> <strong>Blocked</strong> &mdash; cannot proceed, requires manual intervention</li>
+    </ul>
+    <p>These markers are the source of truth for progress tracking. When a task completes, its commit SHA is recorded inline: <code>[x] Task 1.1: Create OAuth provider schema (a1b2c3d)</code>. This creates a direct link between the plan and the git history.</p>
+
+    <h2>Quick Mode</h2>
+    <p>Not every change needs a full intake ceremony. For hotfixes and small, isolated changes scoped to 1&ndash;3 hours, the <code>--quick</code> flag skips the collaborative conversation entirely.</p>
+
+    <pre class="terminal"><code>$ /draft:plan --quick Fix null pointer in email validation</code></pre>
+
+    <p>Quick mode asks exactly two questions: "What exactly needs to change?" and "How will you know it's done?" It then generates a minimal <code>spec.md</code> and a flat <code>plan.md</code> with a single phase. The metadata records <code>"type": "quick"</code> so the status display adjusts accordingly &mdash; no phase progress, just a flat task list.</p>
+
+    <div class="callout callout-tip">
+        <div class="callout-title">When to Use Quick Mode</div>
+        <p>Quick mode is appropriate for changes where the scope is already obvious: a one-line bug fix, a configuration update, a typo correction. If you find yourself wanting to explain context, trade-offs, or alternative approaches, use the full intake &mdash; those are signals that the work has hidden complexity.</p>
+    </div>
+
+    <h2>The Planner Agent</h2>
+    <p>Behind the intake conversation is the Planner Agent, a specialized behavioral protocol tuned for requirement analysis and task decomposition. The Planner organizes work into phases following a consistent pattern: <strong>Foundation</strong> (data models, types, interfaces), <strong>Implementation</strong> (business logic, core features), <strong>Integration</strong> (wiring components, external APIs), and <strong>Polish</strong> (error handling, edge cases, documentation).</p>
+
+    <p>The Planner identifies dependencies between tasks and flags parallel execution opportunities. It writes acceptance criteria that are specific (one testable condition per criterion), observable (verifiable without reading implementation), and independent (no "after criterion 3 passes" dependencies). It rejects vague criteria like "system works correctly" or "code is clean" and demands measurable targets: "Response time under 200ms at p95," not "performance is good."</p>
+
+    <h2>Constraints from Project Context</h2>
+    <p>The specification and plan are not created in a vacuum. During intake, the AI continuously references four project files that act as constraints:</p>
+
+    <ul>
+        <li><strong>product.md</strong> &mdash; Product vision, user personas, goals, and guidelines. The AI aligns acceptance criteria with documented product goals and flags when proposed work contradicts the product direction.</li>
+        <li><strong>tech-stack.md</strong> &mdash; Languages, frameworks, accepted patterns, and code style. The AI suggests implementation approaches consistent with the stack and warns when a proposal would introduce an unapproved dependency.</li>
+        <li><strong>workflow.md</strong> &mdash; Team engineering workflow: TDD preference, commit strategy and frequency, code review checklists, phase verification procedures, and session management rules. Every Draft agent reads this file to determine <em>how</em> work should be done &mdash; when to run tests, how to structure commits, what review gates to enforce. This is not per-engineer preference; it is team-level engineering process stored in the repository.</li>
+        <li><strong>guardrails.md</strong> &mdash; Hard constraints, learned conventions, and known anti-patterns accumulated from previous tracks. The AI checks proposed work against these guardrails and flags violations before they enter the plan. Learned patterns are auto-discovered by <code>/draft:learn</code> during initialization and refined by quality commands over time.</li>
+    </ul>
+
+    <div class="callout callout-warning">
+        <div class="callout-title">Specs Are Not Optional</div>
+        <p>Draft refuses to implement without an approved specification and plan. This is by design. The most expensive bugs are not logic errors &mdash; they are building the wrong thing. A 30-minute intake conversation is cheap compared to a week of implementing the wrong feature.</p>
+    </div>
+
+    <p>With the specification finalized and the plan approved, the track is ready for implementation. The next chapter covers how <code>/draft:implement</code> executes the plan, one task at a time, with the same discipline that created it.</p>
+</div>

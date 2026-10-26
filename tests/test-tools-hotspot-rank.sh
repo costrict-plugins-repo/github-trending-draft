@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+# Test suite for scripts/tools/hotspot-rank.sh (codebase-memory-mcp engine)
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(dirname "$SCRIPT_DIR")"
+TOOL="$ROOT_DIR/scripts/tools/hotspot-rank.sh"
+
+source "$SCRIPT_DIR/test-helpers.sh"
+
+echo "=== hotspot-rank.sh tests ==="
+echo ""
+
+FIXTURE="$(mktemp -d)"
+trap 'rm -rf "$FIXTURE"' EXIT
+
+# --- Fallback: engine disabled → exit 2 with {hotspots:[], source:unavailable} ---
+set +e
+out="$(DRAFT_MEMORY_DISABLE=1 "$TOOL" --repo "$FIXTURE")"
+rc=$?
+set -e
+assert "Exit 2 when engine unavailable" "$([[ "$rc" == "2" ]] && echo true || echo false)"
+if command -v jq >/dev/null 2>&1; then
+    if echo "$out" | jq -e '.hotspots == [] and .source == "unavailable"' >/dev/null 2>&1; then
+        assert "Emits {hotspots:[], source:unavailable} on fallback" "true"
+    else
+        assert "Emits {hotspots:[], source:unavailable} on fallback" "false"
+    fi
+fi
+
+# --- Happy path via mock engine ---
+if command -v jq >/dev/null 2>&1; then
+    MOCK="$(make_mock_memory_engine "$FIXTURE/mockbin")"
+    out2="$(DRAFT_MEMORY_BIN="$MOCK" "$TOOL" --repo "$FIXTURE")"
+    if echo "$out2" | jq -e '.source == "memory-graph" and (.hotspots | length == 2)' >/dev/null 2>&1; then
+        assert "Mock engine yields ranked hotspots (source=memory-graph)" "true"
+    else
+        assert "Mock engine yields ranked hotspots (source=memory-graph)" "false"
+    fi
+    if echo "$out2" | jq -e '.hotspots[0] | (.id == "mock.foo" and .fanIn == 5)' >/dev/null 2>&1; then
+        assert "Hotspot record shape {id, name, fanIn}" "true"
+    else
+        assert "Hotspot record shape {id, name, fanIn}" "false"
+    fi
+    top_out="$(DRAFT_MEMORY_BIN="$MOCK" "$TOOL" --repo "$FIXTURE" --top 1)"
+    count="$(echo "$top_out" | jq '.hotspots | length')"
+    assert "--top 1 returns 1 entry" "$([[ "$count" == "1" ]] && echo true || echo false)"
+    assert "A working run records enrichment=ok" \
+        "$(echo "$out2" | jq -e '.enrichment == "ok"' >/dev/null 2>&1 && echo true || echo false)"
+
+    # --- Engine reachable, but the graph query itself fails ---
+    # A failed query is not an empty graph. Engine 0.10.x returns a human-readable
+    # summary instead of JSON, which is exactly this shape.
+    BROKEN="$FIXTURE/brokenbin/codebase-memory-mcp"
+    mkdir -p "$FIXTURE/brokenbin"
+    cat > "$BROKEN" <<'BROKENMOCK'
+#!/usr/bin/env bash
+if [[ "$1" == "--version" ]]; then echo "codebase-memory-mcp 0.0.0-mock"; exit 0; fi
+[[ "$1" == "cli" ]] || { echo '{}'; exit 0; }
+case "$2" in
+  list_projects)    echo '{"projects":[]}' ;;
+  index_repository) echo '{"project":"mock","status":"indexed"}' ;;
+  get_architecture) echo '{"hotspots":[{"name":"foo","qualified_name":"mock.foo","fan_in":5}],"routes":[]}' ;;
+  query_graph)      echo "rows: 0  (cols: a b)" ;;   # not JSON
+  *)                echo '{}' ;;
+esac
+exit 0
+BROKENMOCK
+    chmod +x "$BROKEN"
+
+    bad="$(DRAFT_MEMORY_BIN="$BROKEN" "$TOOL" --repo "$FIXTURE")"
+    assert "A failed props query is recorded as enrichment=unavailable" \
+        "$(echo "$bad" | jq -e '.enrichment == "unavailable"' >/dev/null 2>&1 && echo true || echo false)"
+    assert "Hotspots survive a failed props query (get_architecture is the source)" \
+        "$(echo "$bad" | jq -e '(.hotspots | length) >= 1' >/dev/null 2>&1 && echo true || echo false)"
+    assert "Unmeasured complexity is omitted, never reported as 0" \
+        "$(echo "$bad" | jq -e '.hotspots[0] | has("complexity")' >/dev/null 2>&1 && echo false || echo true)"
+
+    SHAPE="$FIXTURE/shapebin/codebase-memory-mcp"
+    mkdir -p "$FIXTURE/shapebin"
+    cat > "$SHAPE" <<'SHAPEMOCK'
+#!/usr/bin/env bash
+if [[ "$1" == "--version" ]]; then echo "codebase-memory-mcp 0.0.0-mock"; exit 0; fi
+[[ "$1" == "cli" ]] || { echo '{}'; exit 0; }
+case "$2" in
+  list_projects)    echo '{"projects":[]}' ;;
+  index_repository) echo '{"project":"mock","status":"indexed"}' ;;
+  get_architecture) echo '{"hotspots":[{"name":"foo","qualified_name":"mock.foo","fan_in":5}],"routes":[]}' ;;
+  query_graph)      echo '{}' ;;
+  *)                echo '{}' ;;
+esac
+exit 0
+SHAPEMOCK
+    chmod +x "$SHAPE"
+    shapeless="$(DRAFT_MEMORY_BIN="$SHAPE" "$TOOL" --repo "$FIXTURE")"
+    assert "Shapeless {} props query is enrichment=unavailable, not ok" \
+        "$(echo "$shapeless" | jq -e '.enrichment == "unavailable"' >/dev/null 2>&1 && echo true || echo false)"
+
+    # Enrichment must ask for the hotspots themselves. A capped scan of every node
+    # (LIMIT 10000) silently skipped hotspots past the window on large repos,
+    # scoring them complexity 0 under enrichment:"ok".
+    SCOPED="$FIXTURE/scopedbin/codebase-memory-mcp"
+    mkdir -p "$FIXTURE/scopedbin"
+    cat > "$SCOPED" <<'SCOPEDMOCK'
+#!/usr/bin/env bash
+if [[ "$1" == "--version" ]]; then echo "codebase-memory-mcp 0.0.0-mock"; exit 0; fi
+case "$2" in
+  list_projects)    echo '{"projects":[]}' ;;
+  index_repository) echo '{"project":"mock","status":"indexed"}' ;;
+  get_architecture) echo '{"hotspots":[{"name":"far","qualified_name":"mock.far","fan_in":5}],"routes":[]}' ;;
+  query_graph)
+    if jq -r .query | grep -q "'mock.far'"; then
+      echo '{"rows":[["mock.far","9","4","false"]]}'
+    else
+      echo '{"rows":[["mock.other","1","1","false"]]}'   # the window never reaches mock.far
+    fi ;;
+  *) echo '{}' ;;
+esac
+SCOPEDMOCK
+    chmod +x "$SCOPED"
+    scoped="$(DRAFT_MEMORY_BIN="$SCOPED" "$TOOL" --repo "$FIXTURE" 2>/dev/null || true)"
+    assert "Enrichment queries the hotspot symbols directly" \
+        "$(echo "$scoped" | jq -e '.hotspots[0].complexity == 9 and .hotspots[0].cognitive == 4' >/dev/null 2>&1 && echo true || echo false)"
+fi
+
+echo ""
+echo "=== Results: $PASS passed, $FAIL failed ==="
+exit "$FAIL"

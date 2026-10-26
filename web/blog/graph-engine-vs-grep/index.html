@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speed Is the Wrong Axis: Benchmarking Draft's Graph Engine Against grep — Draft Blog</title>
+    <meta name="description" content="On two real codebases — a 17K-LOC Rust service and a 221K-LOC polyglot platform — grep is often faster than Draft's graph engine. It's also wrong far more often, and costs an AI agent up to 108× more tokens to reach the correct answer. The full benchmark.">
+    <meta name="author" content="Mayur Pise">
+    <meta name="theme-color" content="#06080e">
+    <meta name="keywords" content="code graph engine, grep benchmark, ai agent token cost, codebase-memory-mcp, knowledge graph, callers, blast radius, hotspots, dependency cycles, static analysis, draft, ai code intelligence, context window, tree-sitter">
+    <meta name="robots" content="index, follow">
+    <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+    <meta property="og:title" content="Speed Is the Wrong Axis: Benchmarking Draft's Graph Engine Against grep">
+    <meta property="og:description" content="grep is faster on trivial lookups. It's also wrong more often and costs your AI agent up to 108× more tokens to reach the right answer. Accuracy and tokens — not latency — are the axes that matter in an agent loop.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://getdraft.dev/blog/graph-engine-vs-grep/">
+    <meta property="og:image" content="https://getdraft.dev/social-preview.png?v=400">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Speed Is the Wrong Axis: Draft's Graph Engine vs grep">
+    <meta name="twitter:description" content="grep wins raw latency. The graph engine wins accuracy (2× precision/recall) and tokens (up to 108× cheaper per correct answer) — and the gap grows with codebase size.">
+    <meta name="twitter:image" content="https://getdraft.dev/social-preview.png?v=400">
+    <link rel="canonical" href="https://getdraft.dev/blog/graph-engine-vs-grep/">
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      "headline": "Speed Is the Wrong Axis: Benchmarking Draft's Graph Engine Against grep",
+      "description": "A benchmark of Draft's local code-graph engine against GNU grep across two real codebases, measuring latency, accuracy, and the tokens an AI agent must ingest to reach the correct answer.",
+      "datePublished": "2026-06-16",
+      "dateModified": "2026-06-16",
+      "url": "https://getdraft.dev/blog/graph-engine-vs-grep/",
+      "author": { "@type": "Person", "name": "Mayur Pise", "url": "https://github.com/mayurpise" },
+      "publisher": { "@type": "Organization", "name": "Draft", "url": "https://getdraft.dev" },
+      "image": "https://getdraft.dev/social-preview.png",
+      "inLanguage": "en"
+    }
+    </script>
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-F6X062B4B7"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'G-F6X062B4B7');
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" as="style"
+        href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        onload="this.onload=null;this.rel='stylesheet'">
+    <noscript>
+        <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    </noscript>
+
+    <link rel="stylesheet" href="../../css/base.css">
+    <link rel="stylesheet" href="../../css/layout.css">
+    <link rel="stylesheet" href="../../css/components.css">
+    <link rel="stylesheet" href="../../css/animations.css">
+    <link rel="stylesheet" href="../../css/redesign-v24.css">
+    <link rel="stylesheet" href="../blog.css">
+    <script>
+    (function(){try{if(localStorage.getItem('draft-theme')==='light')document.documentElement.removeAttribute('data-theme');}catch(e){}})();
+    </script>
+</head>
+<body>
+
+    <nav class="top-nav" id="top-nav" aria-label="Primary">
+        <a href="../../" class="nav-logo" aria-label="Draft home">
+            <svg class="logo-mark" viewBox="0 0 26 26" fill="none" aria-hidden="true">
+                <path class="lm-edge" d="M6 19L13 7L20 19M6 19H20" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle class="lm-node" cx="6" cy="19" r="2.6"/>
+                <circle class="lm-node" cx="20" cy="19" r="2.6"/>
+                <circle class="lm-hot" cx="13" cy="7" r="3"/>
+            </svg>
+            Draft
+        </a>
+        <div class="nav-links" id="nav-links">
+            <a href="../../#playground">Engine</a>
+            <a href="../../#commands">Workflow</a>
+            <a href="../../#features">Capabilities</a>
+            <a href="../../#install">Install</a>
+            <a href="../../book/">Book</a>
+            <a href="../../blog/" class="active">Blog</a>
+        </div>
+        <div class="nav-actions" id="nav-actions">
+            <a href="../../changelog/" class="nav-version" title="Release notes">v5.0.3</a>
+            <a href="https://github.com/drafthq/draft" target="_blank" rel="noopener noreferrer" class="nav-github">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                Star on GitHub
+                <span class="gh-stars" id="gh-stars"></span>
+            </a>
+        </div>
+        <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="nav-links nav-actions">
+            <span></span><span></span><span></span>
+        </button>
+    </nav>
+
+    <main class="blog-page">
+        <article class="blog-container">
+
+            <a href="../" class="post-back">&larr; All posts</a>
+
+            <header class="post-header">
+                <p class="post-meta"><time datetime="2026-06-16">June 16, 2026</time> &middot; 10 min read</p>
+                <h1>Speed Is the Wrong Axis: Benchmarking Draft's Graph Engine Against grep</h1>
+                <p class="post-deck">We ran Draft's local code-graph engine head-to-head against GNU grep on two real repositories &mdash; a small Rust service and a large polyglot platform. grep is often <em>faster</em>. It is also wrong far more often, and it costs an AI agent up to <strong>108&times;</strong> more tokens to reach the correct answer. In an agent loop, latency is the axis that matters least.</p>
+            </header>
+
+            <div class="post-body">
+                <h2>The Bottom Line</h2>
+                <p>Every AI coding agent needs to answer structural questions about your code: <em>what calls this function, what does this change touch, where are the hotspots, are there dependency cycles.</em> The default tool for that is text search &mdash; grep, ripgrep, the IDE's "find usages." Draft instead queries a <a href="../local-graph-engine/">local knowledge graph</a> of your repo, served by <a href="https://github.com/DeusData/codebase-memory-mcp">codebase-memory-mcp</a>.</p>
+                <p>So we measured the difference. Same questions, two interfaces, two real codebases, median of 5 timed runs. Three findings:</p>
+                <ul>
+                    <li><strong>grep usually wins raw latency.</strong> On trivial literal lookups it is milliseconds; the engine's per-call CLI startup is tens to hundreds of ms. This is the axis people fixate on, and it is the one that matters least &mdash; both are a rounding error next to a 3&ndash;30 second model turn.</li>
+                    <li><strong>The engine wins accuracy decisively.</strong> On "rank the top-10 hottest functions," grep scored <strong>10&ndash;50% precision and recall</strong> (it ranks variable names and keywords as if they were functions); the engine scored <strong>100% / 100%</strong>. grep cannot express dependency cycles or transitive blast radius at all.</li>
+                    <li><strong>The engine wins tokens and cost by 5&times;&ndash;108&times;.</strong> To reach the <em>correct</em> answer, grep forces the agent to read the files its noisy matches point into. On the large repo, disambiguating the callers of one function cost grep <strong>289,000 tokens</strong>; the engine answered in <strong>2,669</strong>. That is the number that actually shows up on your bill.</li>
+                </ul>
+                <p>And the gap <strong>grows with codebase size</strong> &mdash; which is exactly backwards from what you want grep to do.</p>
+
+                <h2>What We Measured</h2>
+                <p>Two corpora, chosen to bracket the range most teams live in:</p>
+                <ul>
+                    <li><strong>Corpus A &mdash; a ~17K-LOC Rust service</strong> (47 source files). The engine indexed it to ~3,100 nodes and ~7,700 edges.</li>
+                    <li><strong>Corpus B &mdash; a ~221K-LOC polyglot platform</strong> (Python-dominant, with TypeScript and Rust; ~1,200 Python files in total). The engine indexed it to ~32,500 nodes and ~191,000 edges.</li>
+                </ul>
+                <p>The engine is <code>codebase-memory-mcp</code> &mdash; a single local binary (tree-sitter + LSP, 159 languages, 100% local, no API key) that indexes a repo into a SQLite knowledge graph and answers structural queries on demand. Draft drives it through the <code>scripts/tools/graph-*.sh</code> wrappers (<code>graph-arch</code>, <code>hotspot-rank</code>, <code>graph-callers</code>, <code>cycle-detect</code>, <code>graph-impact</code>). The baseline is GNU grep + <code>find</code> &mdash; the fairest "no special tooling" floor. We measured wall-clock latency, answer accuracy against hand-verified ground truth, and the tokens an agent must ingest to reach the correct answer (counted with <code>tiktoken o200k_base</code>).</p>
+
+                <h2>Latency: grep Often Wins, and It Doesn't Matter</h2>
+                <p>Five canonical tasks, engine vs grep, on the large polyglot repo:</p>
+                <figure class="chart" role="group" aria-label="Latency per task, engine versus grep, large polyglot repo">
+                    <figcaption class="chart-title">Latency per task &mdash; large polyglot repo</figcaption>
+                    <p class="chart-note">Wall-clock, median of 5 runs (lower is better). grep wins four of five &mdash; and both sit far under a 3&ndash;30&nbsp;s model turn. <em>Accuracy winner noted per row.</em></p>
+                    <div class="chart-legend">
+                        <span class="lg-engine">Engine</span>
+                        <span class="lg-neutral">grep</span>
+                    </div>
+
+                    <div class="chart-row">
+                        <div class="chart-row-label">Module inventory <span class="ratio">grep 170&times; &middot; engine adds edges</span></div>
+                        <div class="bar engine" style="width:16.2%"><span class="bar-value">170 ms</span></div>
+                        <div class="bar neutral tiny" style="width:0.1%"><span class="bar-value">1 ms</span></div>
+                    </div>
+                    <div class="chart-row">
+                        <div class="chart-row-label">Hotspot top-10 (fan-in) <span class="ratio">grep 35&times; &middot; engine accurate</span></div>
+                        <div class="bar engine" style="width:100%"><span class="bar-value">1050 ms</span></div>
+                        <div class="bar neutral tiny" style="width:2.9%"><span class="bar-value">30 ms</span></div>
+                    </div>
+                    <div class="chart-row">
+                        <div class="chart-row-label">Callers of a function <span class="ratio">grep 16&times; &middot; engine accurate</span></div>
+                        <div class="bar engine" style="width:29.5%"><span class="bar-value">310 ms</span></div>
+                        <div class="bar neutral tiny" style="width:1.9%"><span class="bar-value">20 ms</span></div>
+                    </div>
+                    <div class="chart-row">
+                        <div class="chart-row-label">Dependency cycles <span class="ratio">engine only</span></div>
+                        <div class="bar engine" style="width:97.1%"><span class="bar-value">1020 ms</span></div>
+                        <div class="bar neutral tiny" style="width:0.1%"><span class="bar-value">grep: n/a</span></div>
+                    </div>
+                    <div class="chart-row">
+                        <div class="chart-row-label">Impact / blast radius <span class="ratio">grep 2&times; &middot; engine only</span></div>
+                        <div class="bar engine tiny" style="width:3.8%"><span class="bar-value">40 ms</span></div>
+                        <div class="bar neutral tiny" style="width:1.9%"><span class="bar-value">20 ms</span></div>
+                    </div>
+                </figure>
+                <p>grep is faster on four of five tasks, sometimes by a lot. We are not going to pretend otherwise. But both interfaces are sub-second, and a single agent turn &mdash; one model inference &mdash; takes 3 to 30 seconds. Shaving 250 ms off a tool call you make a handful of times per turn is invisible. The engine's latency is also an <em>upper bound</em>: each call pays CLI startup plus a stateless query against the on-disk graph. A persistent MCP server amortizes that away. <strong>Latency is the axis that's easy to measure and irrelevant to optimize.</strong> The decisive axes are the next two.</p>
+
+                <h2>Accuracy: grep Hands Your Agent Noise</h2>
+                <p>This is where text search quietly fails. grep matches <em>characters</em>; it has no concept of a function, a call edge, or a module boundary. On real code, that produces both false positives (it matches things that aren't what you asked for) and false negatives (it misses things that are).</p>
+                <figure class="chart" role="group" aria-label="Hotspot ranking precision and recall, engine versus grep, large repo">
+                    <figcaption class="chart-title">Hotspot top-10 &mdash; precision &amp; recall, large repo</figcaption>
+                    <p class="chart-note">Higher is better. grep ranks variable names and keywords (<code>is</code>, <code>in</code>, <code>config</code>, <code>len</code>, <code>status</code>&hellip;) as if they were functions, so it scores near-zero on both.</p>
+                    <div class="chart-legend">
+                        <span class="lg-engine">Graph engine</span>
+                        <span class="lg-grep">grep baseline</span>
+                    </div>
+
+                    <div class="chart-row">
+                        <div class="chart-row-label">Precision <span class="ratio">10&times; gap</span></div>
+                        <div class="bar engine" style="width:100%"><span class="bar-value">100% &middot; 10/10 real</span></div>
+                        <div class="bar grep tiny" style="width:10%"><span class="bar-value">10% &middot; 9/10 noise</span></div>
+                    </div>
+                    <div class="chart-row">
+                        <div class="chart-row-label">Recall <span class="ratio">8&times; gap</span></div>
+                        <div class="bar engine" style="width:100%"><span class="bar-value">100%</span></div>
+                        <div class="bar grep tiny" style="width:12%"><span class="bar-value">12% &middot; missed nearly all</span></div>
+                    </div>
+                </figure>
+                <p>The structural queries grep cannot express in percentages at all:</p>
+                <ul>
+                    <li><strong>Callers of a function</strong> &mdash; engine: <strong>80</strong> precise call edges, test/prod-classified. grep: 202 word-matches (180 in tests, 8 definitions, 22 unrelated).</li>
+                    <li><strong>Dependency cycles</strong> &mdash; engine: SCCs computed. grep: <strong>0</strong>, not expressible in text search (&infin; gap).</li>
+                    <li><strong>Blast radius of a change</strong> &mdash; engine: <strong>44</strong>-node transitive closure. grep: 490 flat hits, no transitivity, no edges.</li>
+                </ul>
+                <p><strong>The recall trap is the killer.</strong> Ask grep for the callers of <code>submit_order</code> and <code>grep -wn submit_order</code> returns 202 lines &mdash; mostly tests and definitions &mdash; and <em>zero</em> of the three real production call sites. Why? Because in production the function is invoked as a method: <code>self._order_manager.submit_order(...)</code>. A search for <code>submit_order(</code> never sees <code>.submit_order(</code>. The agent now has to refine its regex <em>and</em> read source to recover the calls grep missed, all while wading through 180 test matches it didn't want. The engine returns all 80 call edges, each attributed to an exact <code>file:function</code> and classified test-vs-prod, in one call. One is a confident answer; the other is a research project.</p>
+
+                <h2>Tokens and Cost: The Bill You Actually Pay</h2>
+                <p>Accuracy and cost are the same story told twice. To turn grep's noisy output into a <em>correct</em> answer, the agent has to read the files those matches point into &mdash; to tell a definition from a test from a string from a qualified call. The engine's structured output needs no follow-up reads. Here is what each path costs in tokens to reach the correct answer, on both repos:</p>
+                <figure class="chart" role="group" aria-label="Tokens to reach the correct answer, engine versus grep">
+                    <figcaption class="chart-title">Tokens to reach the <em>correct</em> answer</figcaption>
+                    <p class="chart-note">Lower is better. Bar lengths are on a log scale (the raw gap spans ~770&times;); the ratio on each row is the real linear multiple. Counted with <code>tiktoken o200k_base</code>.</p>
+                    <div class="chart-legend">
+                        <span class="lg-engine">Engine</span>
+                        <span class="lg-grep">grep</span>
+                    </div>
+
+                    <div class="chart-row">
+                        <div class="chart-row-label">Callers of one function &mdash; small Rust repo <span class="ratio">27&times;</span></div>
+                        <div class="bar engine tiny" style="width:12%"><span class="bar-value">2,424</span></div>
+                        <div class="bar grep" style="width:56%"><span class="bar-value">66,534</span></div>
+                    </div>
+                    <div class="chart-row">
+                        <div class="chart-row-label">Callers of one function &mdash; large polyglot repo <span class="ratio">108&times;</span></div>
+                        <div class="bar engine tiny" style="width:13%"><span class="bar-value">2,669</span></div>
+                        <div class="bar grep" style="width:75%"><span class="bar-value">289,096</span></div>
+                    </div>
+                    <div class="chart-row">
+                        <div class="chart-row-label">Full architecture pass &mdash; small Rust repo <span class="ratio">5.8&times;</span></div>
+                        <div class="bar engine" style="width:42%"><span class="bar-value">24,218</span></div>
+                        <div class="bar grep" style="width:66%"><span class="bar-value">141,297</span></div>
+                    </div>
+                    <div class="chart-row">
+                        <div class="chart-row-label">Full architecture pass &mdash; large polyglot repo <span class="ratio">39&times;</span></div>
+                        <div class="bar engine" style="width:51%"><span class="bar-value">48,195</span></div>
+                        <div class="bar grep" style="width:100%"><span class="bar-value">1,859,804</span></div>
+                    </div>
+                </figure>
+                <p>Notice the direction: on the small repo the caller query is 27&times; cheaper through the engine; on the large repo it's <strong>108&times;</strong>. grep's cost scales with how much noise it produces, which scales with the size of the codebase. The engine's output stays bounded. <strong>The bigger your repo, the more the engine saves &mdash; the opposite of how text search degrades.</strong></p>
+                <p>Translate tokens to dollars at current Claude input prices (Opus 4.8 $5/MTok, Sonnet 4.6 $3/MTok, Haiku 4.5 $1/MTok) and the per-query gap looks small &mdash; fractions of a cent vs a few cents. It stops looking small at fleet scale. Here is one illustrative workload &mdash; a team running 1,000 caller-disambiguation queries a day &mdash; on the large repo:</p>
+                <figure class="chart" role="group" aria-label="Annual cost, engine versus grep, 1000 caller queries per day on the large repo">
+                    <figcaption class="chart-title">Annual cost &mdash; 1,000 caller queries/day, large repo</figcaption>
+                    <p class="chart-note">Lower is better. Bars are linear; the bold figure is avoidable spend per year. Illustrative volume &mdash; the <em>ratio</em> is the property that holds.</p>
+                    <div class="chart-legend">
+                        <span class="lg-engine">Engine $/yr</span>
+                        <span class="lg-grep">grep $/yr</span>
+                    </div>
+
+                    <div class="chart-row">
+                        <div class="chart-row-label">Opus 4.8 <span class="ratio">$523k avoidable</span></div>
+                        <div class="bar engine tiny" style="width:0.9%"><span class="bar-value">$4.9k</span></div>
+                        <div class="bar grep" style="width:100%"><span class="bar-value">$528k</span></div>
+                    </div>
+                    <div class="chart-row">
+                        <div class="chart-row-label">Sonnet 4.6 <span class="ratio">$314k avoidable</span></div>
+                        <div class="bar engine tiny" style="width:0.55%"><span class="bar-value">$2.9k</span></div>
+                        <div class="bar grep" style="width:60%"><span class="bar-value">$317k</span></div>
+                    </div>
+                    <div class="chart-row">
+                        <div class="chart-row-label">Haiku 4.5 <span class="ratio">$105k avoidable</span></div>
+                        <div class="bar engine tiny" style="width:0.2%"><span class="bar-value">$1.0k</span></div>
+                        <div class="bar grep" style="width:20.1%"><span class="bar-value">$106k</span></div>
+                    </div>
+                </figure>
+                <p>The exact dollars depend on your volume and model mix &mdash; treat them as illustrative. The <em>ratio</em> doesn't: it's a property of how much each path makes the agent read, and it's tokenizer-independent.</p>
+
+                <h2>The Scaling Wall: When grep Stops Fitting at All</h2>
+                <p>There's a harder limit than cost. An agent has a finite context window. The grep-to-correct path and the read-the-whole-repo path both blow past it on a large codebase &mdash; the engine's structured output does not:</p>
+                <table>
+                    <thead>
+                        <tr><th>Path (large repo)</th><th>Tokens</th><th>Fits 200K window?</th><th>Fits 1M window?</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>grep-to-correct, one caller query</td><td>289K</td><td><strong>no</strong></td><td>yes</td></tr>
+                        <tr><td>Read all source for an architecture pass</td><td>1.86M</td><td><strong>no</strong></td><td><strong>no</strong></td></tr>
+                        <tr><td>Engine architecture pass (all 5 queries)</td><td>48K</td><td>yes</td><td>yes, bounded</td></tr>
+                    </tbody>
+                </table>
+                <p>This is the part that isn't a tradeoff. On a 221K-LOC repo, "just read the code" is not an option at any price &mdash; it doesn't fit. The engine is the <strong>only</strong> path that scales to a codebase an agent can't hold in its head. Bounded, structured output is what lets an agent reason about a repo far larger than its context window.</p>
+
+                <h2>The Honest Caveats</h2>
+                <p>A benchmark that only flatters its subject isn't worth much. Three things to keep in mind:</p>
+                <ul>
+                    <li><strong>grep genuinely wins raw latency</strong> on trivial literal lookups, and the engine's per-call timing is an upper bound (CLI startup + stateless query). A persistent server closes that gap; none of it matters next to a model turn. If all you need is "does this string appear," grep is the right tool &mdash; reach for the graph when the question is structural.</li>
+                    <li><strong>Cycle detection over-reports.</strong> On the large repo the engine flagged 100 cycles, but most were short self-referential artifacts (route registrations, formatter/util trios) rather than true module-level import cycles. The headline isn't the count &mdash; it's the <em>capability</em>: grep produces zero, because cycles aren't expressible in text search.</li>
+                    <li><strong>Static analysis has blind spots.</strong> The engine's call edges are precise where they're statically resolvable and can be silently incomplete or over-resolved at dynamic-dispatch boundaries &mdash; dependency injection, closures, interface/adapter indirection (e.g. a call routed through a port trait). The right workflow is <strong>graph-first to navigate, then confirm the dynamically-wired spine at the source</strong>. The engine narrows the search from 490 candidates to a 44-node closure; you verify the handful of dynamic edges by hand instead of reading everything.</li>
+                </ul>
+                <p>One more on the numbers: <code>tiktoken</code> runs ~15&ndash;20% below Claude's own tokenizer, so the absolute token and dollar figures are a <em>conservative floor</em> &mdash; the real Claude counts are higher. The cross-path ratios are tokenizer-independent.</p>
+
+                <h2>What This Means for Using Draft</h2>
+                <p>You don't operate any of this directly. Run <code>/draft:init</code> once and Draft builds the graph; from then on every command &mdash; <code>/draft:review</code>, <code>/draft:bughunt</code>, <code>/draft:decompose</code>, <code>/draft:impact</code> &mdash; queries it live instead of grepping blind. When the agent needs to know what a change touches, it gets a transitive closure, not 490 flat hits. When it ranks hotspots, it ranks real functions by fan-in, not keywords by frequency. And it spends a few thousand tokens doing it instead of a few hundred thousand.</p>
+                <p>The engine runs <strong>100% locally</strong> &mdash; no API key, no SaaS, no source code leaving your machine. The graph is queried live, so it never goes stale between commits (the only committed artifact is a tiny gate marker at <code>draft/graph/schema.yaml</code>). It's free and open source.</p>
+                <p>grep is a fine tool for finding a string. It is a poor substitute for understanding a codebase &mdash; and on a large repo, an expensive one. The whole point of giving an AI agent structural memory is to stop making it read the haystack to find the needle.</p>
+            </div>
+
+            <aside class="post-share" aria-label="Share this post">
+                <span class="post-share-label">Share</span>
+                <div class="post-share-buttons">
+                    <button type="button" class="share-btn" data-net="linkedin" aria-label="Share on LinkedIn">
+                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.13 1.45-2.13 2.94v5.67H9.35V9h3.42v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.07 2.07 0 1 1 0-4.14 2.07 2.07 0 0 1 0 4.14zM7.12 20.45H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.72V1.72C24 .77 23.2 0 22.22 0z"/></svg>
+                        <span class="share-btn-label">LinkedIn</span>
+                    </button>
+                    <button type="button" class="share-btn" data-net="x" aria-label="Share on X">
+                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.66l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25h6.83l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                        <span class="share-btn-label">X</span>
+                    </button>
+                    <button type="button" class="share-btn" data-net="hn" aria-label="Share on Hacker News">
+                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M0 0v24h24V0zm6.51 4h2.27l3.22 6.24L15.21 4h2.28l-4.36 8.21V20h-2.26v-7.79z"/></svg>
+                        <span class="share-btn-label">Hacker News</span>
+                    </button>
+                    <button type="button" class="share-btn" data-net="copy" aria-label="Copy link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                        <span class="share-btn-label">Copy link</span>
+                    </button>
+                </div>
+            </aside>
+
+            <footer class="post-footer">
+                <p>Draft is open source: <a href="https://github.com/drafthq/draft">github.com/drafthq/draft</a>. The graph engine is installed to <code>~/.cache/draft/bin</code>, the deterministic shell helpers live under <code>scripts/tools/</code>, and the graph-query contract is documented in <code>core/shared/graph-query.md</code>.</p>
+                <p>Graph engine: <a href="https://github.com/DeusData/codebase-memory-mcp" target="_blank" rel="noopener noreferrer">codebase-memory-mcp</a> by <a href="https://github.com/DeusData" target="_blank" rel="noopener noreferrer">DeusData</a>.</p>
+                <p><a href="../">&larr; Back to all posts</a></p>
+            </footer>
+        </article>
+    </main>
+
+    <footer id="footer" class="footer">
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <span class="footer-logo">
+                    <svg class="logo-mark" width="22" height="22" viewBox="0 0 26 26" fill="none" aria-hidden="true">
+                        <path class="lm-edge" d="M6 19L13 7L20 19M6 19H20" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle class="lm-node" cx="6" cy="19" r="2.6"/>
+                        <circle class="lm-node" cx="20" cy="19" r="2.6"/>
+                        <circle class="lm-hot" cx="13" cy="7" r="3"/>
+                    </svg>
+                    Draft
+                </span>
+                <p>Context-Driven Development for AI-powered software engineering. Draft it before your agent builds it.</p>
+                <div class="footer-social">
+                    <span class="footer-social-label">Share</span>
+                    <a href="https://api.whatsapp.com/send?text=Draft%3A%20code%20intelligence%20for%20your%20AI%20coding%20agent%20%E2%80%94%20powered%20by%20codebase-memory-mcp%2C%20a%20159-language%20local%20knowledge-graph%20engine.%20Free%2C%20open-source%2C%20MIT.%20https%3A%2F%2Fgetdraft.dev" target="_blank" rel="noopener noreferrer" class="social-btn" title="WhatsApp" aria-label="Share on WhatsApp">
+                        <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                    </a>
+                    <a href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fgetdraft.dev" target="_blank" rel="noopener noreferrer" class="social-btn" title="LinkedIn" aria-label="Share on LinkedIn">
+                        <svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                    </a>
+                    <a href="https://news.ycombinator.com/submitlink?u=https%3A%2F%2Fgetdraft.dev&t=Draft%3A%20code%20intelligence%20for%20your%20AI%20coding%20agent%20%E2%80%94%20powered%20by%20codebase-memory-mcp%2C%20a%20159-language%20local%20knowledge-graph%20engine.%20Free%2C%20open-source%2C%20MIT." target="_blank" rel="noopener noreferrer" class="social-btn" title="Hacker News" aria-label="Share on Hacker News">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M0 24V0h24v24H0zM6.951 5.896l4.047 7.61V22h2.004v-8.494l4.047-7.61h-2.19l-2.859 5.83-2.859-5.83H6.951z"/></svg>
+                    </a>
+                    <a href="https://reddit.com/submit?url=https%3A%2F%2Fgetdraft.dev&title=Draft%3A%20code%20intelligence%20for%20your%20AI%20coding%20agent%20%E2%80%94%20powered%20by%20codebase-memory-mcp%2C%20a%20159-language%20local%20knowledge-graph%20engine.%20Free%2C%20open-source%2C%20MIT." target="_blank" rel="noopener noreferrer" class="social-btn" title="Reddit" aria-label="Share on Reddit">
+                        <svg viewBox="0 0 24 24"><path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z"/></svg>
+                    </a>
+                    <a href="https://twitter.com/intent/tweet?url=https%3A%2F%2Fgetdraft.dev&text=Draft%3A%20code%20intelligence%20for%20your%20AI%20coding%20agent%20%E2%80%94%20powered%20by%20codebase-memory-mcp%2C%20a%20159-language%20local%20knowledge-graph%20engine.%20Free%2C%20open-source%2C%20MIT." target="_blank" rel="noopener noreferrer" class="social-btn" title="X" aria-label="Share on X">
+                        <svg viewBox="0 0 24 24"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg>
+                    </a>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h3>Product</h3>
+                <ul>
+                    <li><a href="../../#playground">Graph engine</a></li>
+                    <li><a href="../../#commands">Workflow</a></li>
+                    <li><a href="../../#features">Capabilities</a></li>
+                    <li><a href="../../#install">Install</a></li>
+                    <li><a href="../../changelog/">Changelog</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h3>Learn</h3>
+                <ul>
+                    <li><a href="../../what-is-draft/">What is Draft?</a></li>
+                    <li><a href="../../book/">The Draft Book</a></li>
+                    <li><a href="../../book/audio/">Audiobook</a></li>
+                    <li><a href="../../book/command-reference/">Command reference</a></li>
+                    <li><a href="../../blog/">Blog</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h3>Community</h3>
+                <ul>
+                    <li><a href="https://github.com/drafthq/draft" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+                    <li><a href="https://github.com/drafthq/draft/issues" target="_blank" rel="noopener noreferrer">Issues</a></li>
+                    <li><a href="https://www.npmjs.com/package/@drafthq/draft" target="_blank" rel="noopener noreferrer">npm package</a></li>
+                    <li><a href="https://github.com/DeusData/codebase-memory-mcp" target="_blank" rel="noopener noreferrer">codebase-memory-mcp</a></li>
+                    <li><a href="../../feed.xml">RSS feed</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 <a href="https://github.com/drafthq" target="_blank" rel="noopener noreferrer">DraftHQ</a> &middot; Open source under the <a href="https://github.com/drafthq/draft/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a> &middot; Created &amp; maintained by <a href="https://www.linkedin.com/in/mayurpise/" target="_blank" rel="noopener noreferrer">Mayur Pise</a></p>
+            <p class="footer-credit-sub">Graph engine: <a href="https://github.com/DeusData/codebase-memory-mcp" target="_blank" rel="noopener noreferrer">codebase-memory-mcp</a> by <a href="https://github.com/DeusData" target="_blank" rel="noopener noreferrer">DeusData</a> &mdash; tree-sitter + LSP, 159 languages, 100% local</p>
+        </div>
+    </footer>
+
+    <script src="../../js/theme-toggle.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../share.js"></script>
+</body>
+</html>

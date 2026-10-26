@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Tool Tax: How Claude Code, Cursor, Copilot, and Codex Handle 200 MCP Tools — Draft Blog</title>
+    <meta name="description" content="A comparative look at dynamic MCP tool discovery across the four major coding agents in 2026. Same architectural pattern, four incompatible implementations, and defaults that depend on which model you run.">
+    <meta name="author" content="Mayur Pise">
+    <meta name="theme-color" content="#06080e">
+    <meta name="keywords" content="mcp, model context protocol, claude code, cursor, github copilot, codex cli, tool discovery, tool search, virtual tools, dynamic context discovery, tool tax, agent context window">
+    <meta name="robots" content="index, follow">
+    <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+    <meta property="og:title" content="The Tool Tax: How Claude Code, Cursor, Copilot, and Codex Handle 200 MCP Tools">
+    <meta property="og:description" content="Loading every MCP tool schema upfront costs 50–140K tokens. All four major agents now defer schemas on supported models — in four incompatible ways. A 2026 field comparison.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://getdraft.dev/blog/mcp-tool-discovery/">
+    <meta property="og:image" content="https://getdraft.dev/social-preview.png?v=400">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="The Tool Tax: How Four Coding Agents Handle 200 MCP Tools">
+    <meta name="twitter:description" content="Same pattern, four incompatible implementations. The 2026 comparison of dynamic MCP tool discovery across Claude Code, Cursor, Copilot, and Codex CLI.">
+    <meta name="twitter:image" content="https://getdraft.dev/social-preview.png?v=400">
+    <link rel="canonical" href="https://getdraft.dev/blog/mcp-tool-discovery/">
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      "headline": "The Tool Tax: How Claude Code, Cursor, Copilot, and Codex Handle 200 MCP Tools",
+      "description": "A comparative look at dynamic MCP tool discovery across the four major coding agents in 2026.",
+      "datePublished": "2026-05-11",
+      "dateModified": "2026-10-21",
+      "url": "https://getdraft.dev/blog/mcp-tool-discovery/",
+      "author": { "@type": "Person", "name": "Mayur Pise", "url": "https://github.com/mayurpise" },
+      "publisher": { "@type": "Organization", "name": "Draft", "url": "https://getdraft.dev" },
+      "image": "https://getdraft.dev/social-preview.png",
+      "inLanguage": "en"
+    }
+    </script>
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-F6X062B4B7"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'G-F6X062B4B7');
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" as="style"
+        href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        onload="this.onload=null;this.rel='stylesheet'">
+    <noscript>
+        <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    </noscript>
+
+    <link rel="stylesheet" href="../../css/base.css">
+    <link rel="stylesheet" href="../../css/layout.css">
+    <link rel="stylesheet" href="../../css/components.css">
+    <link rel="stylesheet" href="../../css/animations.css">
+    <link rel="stylesheet" href="../../css/redesign-v24.css">
+    <link rel="stylesheet" href="../blog.css">
+    <script>
+    (function(){try{if(localStorage.getItem('draft-theme')==='light')document.documentElement.removeAttribute('data-theme');}catch(e){}})();
+    </script>
+</head>
+<body>
+
+    <nav class="top-nav" id="top-nav" aria-label="Primary">
+        <a href="../../" class="nav-logo" aria-label="Draft home">
+            <svg class="logo-mark" viewBox="0 0 26 26" fill="none" aria-hidden="true">
+                <path class="lm-edge" d="M6 19L13 7L20 19M6 19H20" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle class="lm-node" cx="6" cy="19" r="2.6"/>
+                <circle class="lm-node" cx="20" cy="19" r="2.6"/>
+                <circle class="lm-hot" cx="13" cy="7" r="3"/>
+            </svg>
+            Draft
+        </a>
+        <div class="nav-links" id="nav-links">
+            <a href="../../#playground">Engine</a>
+            <a href="../../#commands">Workflow</a>
+            <a href="../../#features">Capabilities</a>
+            <a href="../../#install">Install</a>
+            <a href="../../book/">Book</a>
+            <a href="../../blog/" class="active">Blog</a>
+        </div>
+        <div class="nav-actions" id="nav-actions">
+            <a href="../../changelog/" class="nav-version" title="Release notes">v5.0.3</a>
+            <a href="https://github.com/drafthq/draft" target="_blank" rel="noopener noreferrer" class="nav-github">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                Star on GitHub
+                <span class="gh-stars" id="gh-stars"></span>
+            </a>
+        </div>
+        <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="nav-links nav-actions">
+            <span></span><span></span><span></span>
+        </button>
+    </nav>
+
+    <main class="blog-page">
+        <article class="blog-container">
+
+            <a href="../" class="post-back">&larr; All posts</a>
+
+            <header class="post-header">
+                <p class="post-meta"><time datetime="2026-05-11">May 11, 2026</time> &middot; 9 min read</p>
+                <h1>The Tool Tax: How Claude Code, Cursor, Copilot, and Codex Handle 200 MCP Tools</h1>
+                <p class="post-deck">The four major coding agents converged on the same architectural pattern for dynamic MCP tool discovery &mdash; and shipped four incompatible implementations, each gated on different models. Here's what that costs in tokens, latency, and which workloads each agent can actually run.</p>
+            </header>
+
+            <div class="post-body">
+                <blockquote><strong>Updated October 2026.</strong> Two corrections and a lot of movement since May. Codex CLI was already deferring MCP tools behind <code>tool_search</code> when this was published, and since v0.142 it defers every MCP tool on models that support search. VS Code issue #290356 was closed in January as fixed by virtual tools, and Copilot now uses tool search for Claude 4.5+ (rolling out to GPT-5.4+) and skips its 128-tool check for those models. Claude Code's tool search now covers Haiku 4.5+, gateways, and Vertex AI. On supported models, all four agents now load MCP schemas on demand; the sections below are corrected to match.</blockquote>
+                <h2>The Bottom Line</h2>
+                <p>It is now normal for a developer to wire 5&ndash;15 MCP servers into a coding agent, exposing 100&ndash;300 tools. Loading every tool schema upfront on every turn imposes a steep <strong>tool tax</strong>: 50&ndash;140K tokens of input, slower startup, degraded selection accuracy past ~30&ndash;50 visible tools, and &mdash; on models without tool search &mdash; hard rejection at Copilot's 128-tool ceiling.</p>
+                <p>Claude Code, Cursor, OpenAI Codex CLI, and GitHub Copilot have all converged on the same architectural shape (defer schemas; load on demand) but ship four different implementations. The pattern is becoming industry standard. The interfaces are not interoperable. And the defaults, and which models get them, differ enough to change which workloads each agent can actually handle without manual intervention.</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Agent</th>
+                            <th>Mechanism</th>
+                            <th>Default</th>
+                            <th>Upfront cost at 200 tools</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Claude Code</td><td>API-native <code>tool_search_tool</code></td><td>On</td><td>~3&ndash;5K tokens</td></tr>
+                        <tr><td>Cursor</td><td>Files synced to disk + grep</td><td>On</td><td>~2&ndash;4K tokens</td></tr>
+                        <tr><td>GitHub Copilot</td><td>Tool search (newer models) + "virtual tools" embedding clusters</td><td>Model-gated; clusters above threshold</td><td>~5&ndash;10K; 128 cap on models without search</td></tr>
+                        <tr><td>Codex CLI</td><td>OpenAI <code>tool_search</code> (deferred MCP tools)</td><td>On for models with search; eager otherwise</td><td>Deferred with search; ~50K / turn without</td></tr>
+                    </tbody>
+                </table>
+
+                <h2>Why The Tool Tax Hurts</h2>
+                <p>Each MCP tool schema (name, description, JSON-Schema parameters) costs roughly 250&ndash;700 tokens depending on verbosity. Measured in the wild:</p>
+                <ul>
+                    <li><code>mcp-omnisearch</code> (20 tools): ~14,114 tokens &mdash; ~706 tokens/tool</li>
+                    <li><code>playwright</code> (21 tools): ~13,647 tokens &mdash; ~650 tokens/tool</li>
+                    <li>Representative 10-server, 200-tool catalog: 50,000&ndash;140,000 tokens</li>
+                </ul>
+                <p>Three failure modes compound at scale:</p>
+                <ol>
+                    <li><strong>Context displacement.</strong> On a 200K-token window, eager loading consumes 25&ndash;70% of context before the agent reads a single file.</li>
+                    <li><strong>Selection accuracy collapse.</strong> Models lose tool-selection accuracy past ~30&ndash;50 visible tools. With 200, they reliably pick the wrong tool or miss the right one.</li>
+                    <li><strong>Hard client limits.</strong> Copilot in VS Code rejects requests carrying more than 128 tools on models without tool search (GPT-4.1 among them). Virtual-tool grouping normally keeps requests under the cap; if grouping fails, the request is rejected before execution.</li>
+                </ol>
+                <p>The fix is structurally the same everywhere: keep a tiny persistent surface (a search tool, a file index, cluster summaries) and expand full schemas on demand. How each agent implements that is where it gets interesting.</p>
+
+                <h2>Claude Code: API-Native Tool Search</h2>
+                <p>Anthropic ships <code>tool_search_tool_regex_20251119</code> and <code>tool_search_tool_bm25_20251119</code> as first-class API features. In Claude Code, MCP tools are deferred and discovered on demand by default; at session start the agent sees tool names, server instructions, and the search tool, plus full schemas only for tools marked <code>alwaysLoad</code>. When the agent needs a capability, it issues a regex or BM25 query, the API returns matching <code>tool_reference</code> blocks (up to 5 by default; the limit is adjustable), and those expand into full schemas only at the moment of use.</p>
+                <p>Limits worth knowing:</p>
+                <ul>
+                    <li>Catalog ceiling: 10,000 tools.</li>
+                    <li>Descriptions are capped: 4,096 characters for server instructions and upfront tools, 16,384 for tools loaded through search (raised from 2,048; override with <code>CLAUDE_CODE_MAX_MCP_DESCRIPTION_LENGTH</code>).</li>
+                    <li>On by default through gateways set with <code>ANTHROPIC_BASE_URL</code> (Claude Code retries without it if the gateway rejects it) and on Vertex AI for Claude 4.5-generation models and later. Azure-hosted Microsoft Foundry deployments reject it.</li>
+                    <li>Works on current models, including Haiku 4.5 and the Claude 5 family; older models fall back to loading tools upfront.</li>
+                </ul>
+                <p>For 200 tools, this collapses the upfront tool cost from ~50K to ~3&ndash;5K &mdash; a &gt;90% reduction. Anthropic's published figure is &gt;85% across typical multi-server setups.</p>
+
+                <h2>Cursor: The File System Is The Index</h2>
+                <p>Cursor explicitly rejected the dedicated-search-tool approach. Instead, it syncs MCP tool descriptions to a folder on disk. The agent receives only tool names in static context and discovers full schemas by grep-ing or semantic-searching the synced folder when a task calls for it.</p>
+                <p>This is part of a broader "everything is a file" strategy: Cursor applies the same primitive to Agent Skills, long terminal output, and oversized tool responses. The file surface unlocks capabilities the API-level approach can't &mdash; notably, surfacing MCP server status (re-authentication needed, server unhealthy) without forgetting the tools entirely.</p>
+                <p>A/B test results published in January 2026 reported a <strong>46.9% reduction in total agent tokens</strong> on runs that called an MCP tool. Schema-only reduction is higher; the 46.9% is across all session content.</p>
+
+                <h2>GitHub Copilot: Virtual Tools</h2>
+                <p>Copilot took a third path: embedding-guided clustering. The November 2025 blog post calls the system "virtual tools" &mdash; functionally similar tools are grouped using an internal embedding model and cosine similarity, with each cluster summarized by a single model call (cached locally). The agent sees the cluster summaries and expands a cluster only when its task matches.</p>
+                <p>In published benchmarks (SWE-Lancer, SWEbench-Verified), this approach improved success rates by 2&ndash;5 percentage points with both GPT-5 and Sonnet 4.5, and cut response latency by ~400ms.</p>
+                <p>Since then Copilot has added a second mechanism, and the conditions depend on the model:</p>
+                <ul>
+                    <li><strong>Tool search on newer models.</strong> VS Code 1.109 brought Anthropic's tool search to Copilot; it is on by default for Claude Sonnet 4.5+ and Opus 4.5+ and rolling out to GPT-5.4 and GPT-5.5, and 1.118 trimmed the always-loaded core to ~30 tools. For tool-search models, the 128-tool check is skipped.</li>
+                    <li><strong>128-tool cap for everything else.</strong> Models without tool search (GPT-4.1 included) still hit a 128-tool limit. Virtual-tool grouping keeps requests under it unless grouping fails &mdash; for example during an embeddings-service outage. VS Code issue #290356 was closed on that basis in January 2026.</li>
+                    <li><strong>Threshold-gated clustering.</strong> Virtual tools activate when the experimental <code>github.copilot.chat.virtualTools.threshold</code> setting (default 128) is crossed; below threshold, tools are still loaded eagerly.</li>
+                </ul>
+                <p>Copilot CLI followed in May 2026 with experimental tool search and deferred loading for MCP tools.</p>
+
+                <h2>OpenAI Codex CLI: Model-Gated Tool Search</h2>
+                <p>Codex CLI wires MCP tools to the OpenAI API's <code>tool_search</code> (<code>defer_loading: true</code>, GPT-5.4 and later). Since v0.142 it defers every MCP tool when the active model supports search; by v0.119 (April 2026) it already deferred them behind <code>tool_search</code> at 100+ tools or behind a feature flag. On models without search support, Codex still exposes every MCP tool on session start.</p>
+                <p>Static controls still matter:</p>
+                <ul>
+                    <li><code>enabled_tools = [...]</code> and <code>disabled_tools = [...]</code> allow/deny lists per server</li>
+                    <li><code>enabled = false</code> to disable a server without removing config</li>
+                    <li>Project-scoped <code>.codex/config.toml</code> for narrower scoping (trusted projects only)</li>
+                    <li><code>mcp_optional_startup_grace_ms</code> (default 1000) bounds how long optional servers can delay startup</li>
+                </ul>
+                <p>Known scaling issues with many servers:</p>
+                <ul>
+                    <li>MCP startup used to sit on the first-turn critical path. Since CLI 0.162.1, optional servers get a shared, bounded grace period, so one slow server no longer stalls the session; servers declared as explicit dependencies still wait.</li>
+                    <li>Sub-agents inherit the parent's MCP servers, and a custom agent file can't narrow them; per-agent MCP scoping is still an open issue (#20135).</li>
+                </ul>
+                <p>On a model without search support, 200 tools still cost the full ~50K tokens on every turn &mdash; ~500K tokens of pure tool-definition overhead across a 10-turn session. On a search-capable model, Codex lands in the same deferred band as the others.</p>
+
+                <h2>Token Economics At 200 Tools</h2>
+                <p>The following figures assume a representative MCP catalog with ~250 tokens per tool schema (conservative; verbose servers run 2&ndash;3&times; higher).</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Agent</th>
+                            <th>Upfront</th>
+                            <th>Per-turn</th>
+                            <th>10-turn overhead</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Claude Code (tool_search on)</td><td>3&ndash;5K</td><td>3&ndash;5K + ~500 per expansion</td><td>30&ndash;50K</td></tr>
+                        <tr><td>Cursor (DCD on)</td><td>2&ndash;4K</td><td>2&ndash;4K + ~400 per file read</td><td>20&ndash;40K</td></tr>
+                        <tr><td>GitHub Copilot (virtual tools, &lt;128)</td><td>5&ndash;10K</td><td>5&ndash;10K + cluster expansions</td><td>50&ndash;100K</td></tr>
+                        <tr><td>Codex CLI (model without search)</td><td>50K</td><td>50K</td><td>500K</td></tr>
+                    </tbody>
+                </table>
+                <p>On a 200K-token window, eager loading &mdash; Codex on a model without search, or any agent with deferral switched off &mdash; consumes 25% of context before any work starts; with verbose servers, this rises to 70%. The deferred paths leave essentially all of context available for the actual task. Over a multi-turn session, eager per-turn cost compounds linearly &mdash; what costs $X in the first turn costs ~$10X across ten turns.</p>
+
+                <h2>Practical Guidance</h2>
+                <p>For multi-MCP workloads (5+ servers, 100+ tools), agent choice materially affects what's possible:</p>
+                <ol>
+                    <li><strong>Verify defaults are active.</strong> Claude Code: tool search is on by default, gateways included; confirm <code>ENABLE_TOOL_SEARCH</code> is not <code>false</code> and <code>CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS</code> is unset (it forces tool search off); <code>auto</code> / <code>auto:N</code> defer only past a context threshold. Copilot: use a tool-search model (Claude Sonnet/Opus 4.5+, GPT-5.4+ as it rolls out); on other models, lower <code>github.copilot.chat.virtualTools.threshold</code> (default 128) to start clustering earlier. Cursor: dynamic context discovery is on by default &mdash; no action needed.</li>
+                    <li><strong>For Codex CLI:</strong> run a model that supports <code>tool_search</code> so MCP tools are deferred. Still scope with project-level <code>.codex/config.toml</code> and <code>enabled_tools</code> allowlists &mdash; sub-agents inherit every server. Treat global MCP config as a superset; on models without search, expect 30&ndash;50 active tools max for healthy operation.</li>
+                    <li><strong>For Copilot at 128+ tools on a model without tool search:</strong> the cap is enforced at the VS Code layer before the agent processes anything. Virtual-tool grouping keeps you under it unless grouping fails. Trim selected tools manually, split work across sessions, or switch to a tool-search model.</li>
+                    <li><strong>MCP server design:</strong> prefix tool names by server (<code>matrix_query_*</code>, <code>quality_metric_*</code>) so search and clustering have clean signal. Keep tool descriptions concise &mdash; Claude Code caps them at 4,096 characters for upfront tools and server instructions.</li>
+                </ol>
+
+                <h2>Where The Standard Is Heading</h2>
+                <p>All four implementations solve the same problem and converge on the same architectural shape: a small persistent surface (search tool, file index, cluster summaries) plus on-demand schema expansion. None of the wire formats interoperate. As of the 2026-07-28 spec revision, MCP itself ships <code>notifications/tools/list_changed</code> for dynamic catalogs but no standardized search/defer primitive that clients and servers agree on. A Progressive Disclosure working group is now exploring grouping and tool search as extensions; nothing has shipped in the spec yet.</p>
+                <p>The pattern is industry-standard. The interface is not. Anthropic's <code>tool_search_tool_*</code>, OpenAI's <code>tool_search</code> + <code>defer_loading</code>, Cursor's file sync, and Copilot's virtual tools each remain vendor-specific. Until MCP adds a discovery primitive, each agent's behavior at scale will diverge in the ways documented here.</p>
+
+                <h2>The Draft Angle</h2>
+                <p>Dynamic tool discovery solves the inbound tool-tax problem &mdash; how the agent navigates a huge external catalog. It does not solve the outbound problem: how the agent navigates <em>your codebase</em>. That's what Draft's local <a href="../local-graph-engine/">knowledge graph</a> is for. Deterministic answers to "what calls this function" and "what does this change touch" are served live from a local engine (<a href="https://github.com/DeusData/codebase-memory-mcp">codebase-memory-mcp</a>) and queried on demand via shell wrappers &mdash; no committed snapshot files, no staleness. Different problem, same lesson: <strong>defer everything, expand on demand, keep the persistent surface small.</strong></p>
+
+                <h2>Sources</h2>
+                <ul>
+                    <li>Anthropic: tool search tool documentation, Claude Code MCP docs</li>
+                    <li>Cursor blog: "Dynamic context discovery" (January 2026)</li>
+                    <li>GitHub blog: "How we're making GitHub Copilot smarter with fewer tools" (November 2025)</li>
+                    <li>OpenAI Developers: Codex CLI MCP reference, tool_search API guide</li>
+                    <li>Real-world MCP tool-cost measurements: Scott Spence, October 2025</li>
+                    <li>VS Code issue #290356 (128-tool cap; closed as fixed by virtual tools, January 2026)</li>
+                    <li>VS Code release notes 1.109 and 1.118 (tool search, compact tool core)</li>
+                    <li>GitHub Copilot CLI issue #2992 (sub-agent tool scoping, April 2026) and changelog 1.0.49 (deferred MCP tools)</li>
+                    <li>Codex CLI release 0.119.0 and PR #29486 (MCP tools deferred under <code>tool_search</code>)</li>
+                    <li>Codex CLI issue #21318 (MCP startup blocking, May 2026; closed October 2026) and issue #20135 (per-agent MCP scoping)</li>
+                    <li>MCP specification 2026-07-28 changelog; Progressive Disclosure working group</li>
+                </ul>
+            </div>
+
+            <aside class="post-share" aria-label="Share this post">
+                <span class="post-share-label">Share</span>
+                <div class="post-share-buttons">
+                    <button type="button" class="share-btn" data-net="linkedin" aria-label="Share on LinkedIn">
+                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.13 1.45-2.13 2.94v5.67H9.35V9h3.42v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.07 2.07 0 1 1 0-4.14 2.07 2.07 0 0 1 0 4.14zM7.12 20.45H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.72V1.72C24 .77 23.2 0 22.22 0z"/></svg>
+                        <span class="share-btn-label">LinkedIn</span>
+                    </button>
+                    <button type="button" class="share-btn" data-net="x" aria-label="Share on X">
+                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.66l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25h6.83l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                        <span class="share-btn-label">X</span>
+                    </button>
+                    <button type="button" class="share-btn" data-net="hn" aria-label="Share on Hacker News">
+                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M0 0v24h24V0zm6.51 4h2.27l3.22 6.24L15.21 4h2.28l-4.36 8.21V20h-2.26v-7.79z"/></svg>
+                        <span class="share-btn-label">Hacker News</span>
+                    </button>
+                    <button type="button" class="share-btn" data-net="copy" aria-label="Copy link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                        <span class="share-btn-label">Copy link</span>
+                    </button>
+                </div>
+            </aside>
+
+            <footer class="post-footer">
+                <p>Draft is open source: <a href="https://github.com/drafthq/draft">github.com/drafthq/draft</a>. The graph engine lives under <code>graph/</code>, the deterministic shell helpers under <code>scripts/tools/</code>, and the methodology under <code>core/</code>.</p>
+                <p>Graph engine: <a href="https://github.com/DeusData/codebase-memory-mcp" target="_blank" rel="noopener noreferrer">codebase-memory-mcp</a> by <a href="https://github.com/DeusData" target="_blank" rel="noopener noreferrer">DeusData</a>.</p>
+                <p><a href="../">&larr; Back to all posts</a></p>
+            </footer>
+        </article>
+    </main>
+
+    <footer id="footer" class="footer">
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <span class="footer-logo">
+                    <svg class="logo-mark" width="22" height="22" viewBox="0 0 26 26" fill="none" aria-hidden="true">
+                        <path class="lm-edge" d="M6 19L13 7L20 19M6 19H20" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle class="lm-node" cx="6" cy="19" r="2.6"/>
+                        <circle class="lm-node" cx="20" cy="19" r="2.6"/>
+                        <circle class="lm-hot" cx="13" cy="7" r="3"/>
+                    </svg>
+                    Draft
+                </span>
+                <p>Context-Driven Development for AI-powered software engineering. Draft it before your agent builds it.</p>
+                <div class="footer-social">
+                    <span class="footer-social-label">Share</span>
+                    <a href="https://api.whatsapp.com/send?text=Draft%3A%20code%20intelligence%20for%20your%20AI%20coding%20agent%20%E2%80%94%20powered%20by%20codebase-memory-mcp%2C%20a%20159-language%20local%20knowledge-graph%20engine.%20Free%2C%20open-source%2C%20MIT.%20https%3A%2F%2Fgetdraft.dev" target="_blank" rel="noopener noreferrer" class="social-btn" title="WhatsApp" aria-label="Share on WhatsApp">
+                        <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                    </a>
+                    <a href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fgetdraft.dev" target="_blank" rel="noopener noreferrer" class="social-btn" title="LinkedIn" aria-label="Share on LinkedIn">
+                        <svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                    </a>
+                    <a href="https://news.ycombinator.com/submitlink?u=https%3A%2F%2Fgetdraft.dev&t=Draft%3A%20code%20intelligence%20for%20your%20AI%20coding%20agent%20%E2%80%94%20powered%20by%20codebase-memory-mcp%2C%20a%20159-language%20local%20knowledge-graph%20engine.%20Free%2C%20open-source%2C%20MIT." target="_blank" rel="noopener noreferrer" class="social-btn" title="Hacker News" aria-label="Share on Hacker News">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M0 24V0h24v24H0zM6.951 5.896l4.047 7.61V22h2.004v-8.494l4.047-7.61h-2.19l-2.859 5.83-2.859-5.83H6.951z"/></svg>
+                    </a>
+                    <a href="https://reddit.com/submit?url=https%3A%2F%2Fgetdraft.dev&title=Draft%3A%20code%20intelligence%20for%20your%20AI%20coding%20agent%20%E2%80%94%20powered%20by%20codebase-memory-mcp%2C%20a%20159-language%20local%20knowledge-graph%20engine.%20Free%2C%20open-source%2C%20MIT." target="_blank" rel="noopener noreferrer" class="social-btn" title="Reddit" aria-label="Share on Reddit">
+                        <svg viewBox="0 0 24 24"><path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z"/></svg>
+                    </a>
+                    <a href="https://twitter.com/intent/tweet?url=https%3A%2F%2Fgetdraft.dev&text=Draft%3A%20code%20intelligence%20for%20your%20AI%20coding%20agent%20%E2%80%94%20powered%20by%20codebase-memory-mcp%2C%20a%20159-language%20local%20knowledge-graph%20engine.%20Free%2C%20open-source%2C%20MIT." target="_blank" rel="noopener noreferrer" class="social-btn" title="X" aria-label="Share on X">
+                        <svg viewBox="0 0 24 24"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg>
+                    </a>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h3>Product</h3>
+                <ul>
+                    <li><a href="../../#playground">Graph engine</a></li>
+                    <li><a href="../../#commands">Workflow</a></li>
+                    <li><a href="../../#features">Capabilities</a></li>
+                    <li><a href="../../#install">Install</a></li>
+                    <li><a href="../../changelog/">Changelog</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h3>Learn</h3>
+                <ul>
+                    <li><a href="../../what-is-draft/">What is Draft?</a></li>
+                    <li><a href="../../book/">The Draft Book</a></li>
+                    <li><a href="../../book/audio/">Audiobook</a></li>
+                    <li><a href="../../book/command-reference/">Command reference</a></li>
+                    <li><a href="../../blog/">Blog</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h3>Community</h3>
+                <ul>
+                    <li><a href="https://github.com/drafthq/draft" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+                    <li><a href="https://github.com/drafthq/draft/issues" target="_blank" rel="noopener noreferrer">Issues</a></li>
+                    <li><a href="https://www.npmjs.com/package/@drafthq/draft" target="_blank" rel="noopener noreferrer">npm package</a></li>
+                    <li><a href="https://github.com/DeusData/codebase-memory-mcp" target="_blank" rel="noopener noreferrer">codebase-memory-mcp</a></li>
+                    <li><a href="../../feed.xml">RSS feed</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 <a href="https://github.com/drafthq" target="_blank" rel="noopener noreferrer">DraftHQ</a> &middot; Open source under the <a href="https://github.com/drafthq/draft/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a> &middot; Created &amp; maintained by <a href="https://www.linkedin.com/in/mayurpise/" target="_blank" rel="noopener noreferrer">Mayur Pise</a></p>
+            <p class="footer-credit-sub">Graph engine: <a href="https://github.com/DeusData/codebase-memory-mcp" target="_blank" rel="noopener noreferrer">codebase-memory-mcp</a> by <a href="https://github.com/DeusData" target="_blank" rel="noopener noreferrer">DeusData</a> &mdash; tree-sitter + LSP, 159 languages, 100% local</p>
+        </div>
+    </footer>
+
+    <script src="../../js/theme-toggle.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../share.js"></script>
+</body>
+</html>

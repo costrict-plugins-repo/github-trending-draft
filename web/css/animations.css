@@ -1,0 +1,90 @@
+/* ============================================================
+   ANIMATIONS — Scroll reveals and keyframes
+   Reveals are short and low-travel: content arrives, it does
+   not perform. The hero owns the one orchestrated sequence.
+   ============================================================ */
+
+.reveal,
+.reveal-left,
+.reveal-right,
+.reveal-scale {
+    opacity: 0;
+    transition: opacity 0.7s var(--ease-out), transform 0.7s var(--ease-out);
+    will-change: opacity, transform;
+}
+.reveal { transform: translateY(14px); }
+.reveal-left { transform: translateX(-18px); }
+.reveal-right { transform: translateX(18px); }
+.reveal-scale { transform: scale(0.98); }
+
+.reveal.visible,
+.reveal-left.visible,
+.reveal-right.visible,
+.reveal-scale.visible {
+    opacity: 1;
+    transform: none;
+}
+
+/* Staggered children */
+.reveal-stagger > * {
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.55s var(--ease-out), transform 0.55s var(--ease-out);
+}
+.reveal-stagger.visible > * { opacity: 1; transform: none; }
+.reveal-stagger.visible > *:nth-child(1) { transition-delay: 0ms; }
+.reveal-stagger.visible > *:nth-child(2) { transition-delay: 60ms; }
+.reveal-stagger.visible > *:nth-child(3) { transition-delay: 120ms; }
+.reveal-stagger.visible > *:nth-child(4) { transition-delay: 180ms; }
+.reveal-stagger.visible > *:nth-child(5) { transition-delay: 240ms; }
+.reveal-stagger.visible > *:nth-child(6) { transition-delay: 300ms; }
+.reveal-stagger.visible > *:nth-child(7) { transition-delay: 360ms; }
+.reveal-stagger.visible > *:nth-child(8) { transition-delay: 420ms; }
+.reveal-stagger.visible > *:nth-child(9) { transition-delay: 480ms; }
+.reveal-stagger.visible > *:nth-child(10) { transition-delay: 540ms; }
+
+/* ============================================================
+   HERO ENTRANCE — one orchestrated sequence
+   ============================================================ */
+@keyframes riseIn {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@keyframes consoleIn {
+    from { opacity: 0; transform: translateY(22px) scale(0.985); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.hero-content .hero-eyebrow { animation: riseIn 0.7s var(--ease-out) 0.05s both; }
+.hero-content .hero-h1 { animation: riseIn 0.8s var(--ease-out) 0.15s both; }
+.hero-content .tagline { animation: riseIn 0.8s var(--ease-out) 0.28s both; }
+.hero-content .hero-actions { animation: riseIn 0.8s var(--ease-out) 0.38s both; }
+.hero-content .hero-install { animation: riseIn 0.8s var(--ease-out) 0.46s both; }
+.hero-content .hero-titleblock { animation: riseIn 0.8s var(--ease-out) 0.56s both; }
+.hero-console { animation: consoleIn 1s var(--ease-out) 0.35s both; }
+.platform-band { animation: fadeIn 0.8s var(--ease-out) 0.9s both; }
+
+/* Utility keyframes */
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+@keyframes livePing {
+    0% { transform: scale(1); opacity: 0.7; }
+    100% { transform: scale(2.6); opacity: 0; }
+}
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+    .reveal, .reveal-left, .reveal-right, .reveal-scale,
+    .reveal-stagger > * {
+        opacity: 1 !important;
+        transform: none !important;
+    }
+}

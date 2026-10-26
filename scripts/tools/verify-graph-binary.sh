@@ -1,0 +1,176 @@
+#!/usr/bin/env bash
+# verify-graph-binary.sh — validate and select the Draft knowledge-graph engine.
+#
+# The engine is the codebase-memory-mcp binary. Resolution order (see _lib.sh:find_memory_bin):
+#   0. DRAFT_MEMORY_DISABLE — hard off; resolution stops here and reports "none"
+#   1. DRAFT_MEMORY_BIN override
+#   2. codebase-memory-mcp on $PATH
+#   3. Draft-managed install (~/.cache/draft/bin/)
+#   4. Vendored arch-specific under bin/<arch>/
+#
+# Emits JSON or a human report. Exit 0 = found+usable, 2 = none (graceful for skills).
+#
+# Usage:
+#   scripts/tools/verify-graph-binary.sh [--repo <dir>] [--plugin-root <dir>] [--json] [--verbose] [--strict]
+#
+# --strict : fail (exit 2) when no engine is found (release/CI gates)
+# Integrates with install/package and the skills/init graph step.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=_lib.sh
+source "$SCRIPT_DIR/_lib.sh"
+
+REPO="."
+PLUGIN_ROOT=""
+EMIT_JSON=0
+VERBOSE=0
+STRICT=0
+
+usage() {
+  cat <<'EOF'
+verify-graph-binary.sh — Draft knowledge-graph engine resolver + verifier
+
+Engine: codebase-memory-mcp
+Resolution: DRAFT_MEMORY_DISABLE (hard off) > DRAFT_MEMORY_BIN > PATH
+            > ~/.cache/draft/bin > bin/<arch>/
+
+Options:
+  --repo DIR         Repo root for context (default .)
+  --plugin-root DIR  Explicit Draft plugin install root
+  --json             Emit JSON report
+  --verbose          Human progress
+  --strict           Exit 2 if no engine found
+  --help             This message
+
+Exit codes:
+  0  Usable engine found and responsive to --version
+  1  Bad args
+  2  No engine located
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --repo) REPO="${2:?--repo requires a value}"; shift 2 ;;
+    --plugin-root) PLUGIN_ROOT="${2:?--plugin-root requires a value}"; shift 2 ;;
+    --json) EMIT_JSON=1; shift ;;
+    --verbose) VERBOSE=1; shift ;;
+    --strict) STRICT=1; shift ;;
+    --help|-h) usage; exit 0 ;;
+    *) echo "Unknown: $1" >&2; usage; exit 1 ;;
+  esac
+done
+
+log() { [[ $VERBOSE -eq 1 ]] && echo "[verify-graph] $*" >&2 || true; }
+
+# Resolve architecture string for the report (linux-amd64, darwin-arm64, ...).
+resolve_arch() {
+  local os arch
+  os=$(uname -s | tr '[:upper:]' '[:lower:]')
+  arch=$(uname -m)
+  case "$arch" in
+    x86_64|amd64) arch="amd64" ;;
+    aarch64|arm64) arch="arm64" ;;
+    armv7l) arch="arm" ;;
+  esac
+  echo "${os}-${arch}"
+}
+
+ARCH="$(resolve_arch)"
+log "Resolved arch: $ARCH"
+
+REPO_ABS="$(cd "$REPO" 2>/dev/null && pwd || echo "$REPO")"
+SELF_REPO="${PLUGIN_ROOT:-$SCRIPT_DIR/../..}"
+
+# Classify the resolution source for reporting.
+classify_source() {
+  case "$MEMORY_BIN" in
+    "$HOME/.cache/draft/bin/"*) echo "managed" ;;
+    */bin/"$ARCH"/*) echo "bundled:$ARCH" ;;
+    codebase-memory-mcp) echo "path" ;;
+    "${DRAFT_MEMORY_BIN:-__none__}") echo "override" ;;
+    *) echo "path" ;;
+  esac
+}
+
+MEMORY_BIN=""
+if ! find_memory_bin "$REPO_ABS" "$SELF_REPO"; then
+  # DRAFT_MEMORY_DISABLE short-circuits resolution, so say so — "install it or
+  # put it on PATH" is the wrong remedy when an env var turned the engine off.
+  if [[ -n "${DRAFT_MEMORY_DISABLE:-}" ]]; then
+    local_msg="Graph engine disabled by DRAFT_MEMORY_DISABLE (unset it to re-enable resolution)"
+  else
+    local_msg="No codebase-memory-mcp engine found in DRAFT_MEMORY_BIN, PATH, ~/.cache/draft/bin, or bin/<arch>/"
+  fi
+  if [[ $EMIT_JSON -eq 1 ]]; then
+    if [[ $STRICT -eq 1 ]]; then
+      printf '{"status":"none","engine_bin":null,"source":null,"arch":"%s","message":"strict mode: %s"}\n' "$ARCH" "$local_msg"
+    else
+      printf '{"status":"unavailable","engine_bin":null,"source":null,"arch":"%s","message":"%s"}\n' "$ARCH" "$local_msg"
+    fi
+  elif [[ $STRICT -eq 1 ]]; then
+    echo "STRICT: $local_msg" >&2
+  elif [[ -n "${DRAFT_MEMORY_DISABLE:-}" ]]; then
+    echo "ERROR: $local_msg" >&2
+  else
+    echo "ERROR: No Draft graph engine located (codebase-memory-mcp)." >&2
+    echo "        Install it (scripts/fetch-memory-engine.sh) or put it on PATH." >&2
+  fi
+  exit 2
+fi
+
+SOURCE="$(classify_source)"
+log "Selected engine: $MEMORY_BIN (source=$SOURCE)"
+
+# Liveness: must respond to --version.
+if ! "$MEMORY_BIN" --version >/dev/null 2>&1; then
+  log "Selected engine failed --version"
+  echo "ERROR: engine $MEMORY_BIN found but failed --version (wrong OS/arch or corrupt?)." >&2
+  if [[ $EMIT_JSON -eq 1 ]]; then
+    printf '{"status":"unusable","engine_bin":"%s","source":"%s","arch":"%s"}\n' \
+      "$(json_escape "$MEMORY_BIN")" "$(json_escape "$SOURCE")" "$ARCH"
+  fi
+  exit 2
+fi
+
+STATUS="ok"
+
+# The wrappers are verified against the pinned DEFAULT_VERSION. Another version
+# (e.g. a global install on PATH, which outranks the managed one) stays usable,
+# but may speak a different dialect or CLI — say so rather than run it silently.
+VERSION="$("$MEMORY_BIN" --version 2>/dev/null | awk '{print $NF}')"
+PINNED="$(sed -n 's/^DEFAULT_VERSION="v\{0,1\}\([^"]*\)".*/\1/p' "$SELF_REPO/scripts/fetch-memory-engine.sh" 2>/dev/null | head -1)"
+if [[ -n "$PINNED" && "$VERSION" != "$PINNED" ]]; then
+  echo "WARNING: engine version $VERSION differs from the pinned $PINNED that Draft's graph tools are verified against." >&2
+  echo "         Install the pinned engine: scripts/fetch-memory-engine.sh --force" >&2
+fi
+
+if [[ $EMIT_JSON -eq 1 ]]; then
+  printf '{"status":"%s","engine_bin":"%s","source":"%s","arch":"%s","version":"%s","pinned_version":"%s"}\n' \
+    "$(json_escape "$STATUS")" "$(json_escape "$MEMORY_BIN")" "$(json_escape "$SOURCE")" "$(json_escape "$ARCH")" \
+    "$(json_escape "$VERSION")" "$(json_escape "$PINNED")"
+else
+  echo "Draft graph engine: $MEMORY_BIN"
+  echo "  source: $SOURCE (arch=$ARCH)"
+  echo "  version: $VERSION (pinned: ${PINNED:-unknown})"
+  echo "  status: $STATUS"
+fi
+
+# Usage report side-effect when in a draft/ context (graph-usage-report contract).
+if [[ -d "$REPO/draft" ]]; then
+  mkdir -p "$REPO/draft"
+  cat > "$REPO/draft/.graph-binary-report.json" <<EOF
+{
+  "detected_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "engine_bin": "$(json_escape "$MEMORY_BIN")",
+  "source": "$(json_escape "$SOURCE")",
+  "arch": "$(json_escape "$ARCH")",
+  "status": "$(json_escape "$STATUS")"
+}
+EOF
+  log "Wrote draft/.graph-binary-report.json (usage report contract)"
+fi
+
+exit 0

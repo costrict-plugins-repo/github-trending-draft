@@ -1,0 +1,332 @@
+# Draft
+
+> Code intelligence built into your AI coding agent. Free, open-source, MIT.
+
+Draft is a plugin that adds three things to AI coding agents: a knowledge graph engine that maps your repo, spec-driven planning that produces git-tracked specs and phased plans, and a three-stage review pipeline that validates work against the plan. Together, they force AI to execute pre-approved work — grounded in real codebase understanding — instead of guessing.
+
+Created and maintained by Mayur Pise (https://github.com/mayurpise). Draft works with Claude Code, Cursor, Codex, OpenCode, GitHub Copilot, and Google Gemini. 4 primary workflow commands + 5 routers + 24 specialist commands (still directly callable), 7 specialized agents, 14-dimension bug hunting, ACID-style module audits, knowledge graph with query tools, 53 deterministic shell helpers. MIT license, no telemetry, no paid tiers.
+
+## Installation
+
+One npm command installs Draft into any supported host:
+```
+npx @drafthq/draft install <host>     # claude-code | cursor | codex | opencode
+# --global default: claude-code, cursor
+# --project default: codex, opencode
+# or: npm install -g @drafthq/draft && draft install <host>
+draft list                            # show every host + where it installs
+```
+
+### Claude Code
+```
+npx @drafthq/draft install claude-code
+/draft:review                         # zero setup — reviews your current diff
+/draft:init                           # then index, to enable structural checks
+```
+Alternative (native marketplace): `/plugin marketplace add drafthq/draft` then `/plugin install draft`.
+
+### Cursor
+```
+npx @drafthq/draft install cursor
+```
+Default `--global`. Installs the plugin tree to `~/.cursor/plugins/local/draft`, writes `.cursor-plugin/plugin.json`, and registers + enables `draft@draft-plugins` in Cursor's plugin registry. Restart Cursor (or Developer: Reload Window) to load the commands.
+
+### Codex
+```
+npx @drafthq/draft install codex
+```
+Default `--project`. Writes `AGENTS.md` to the repo root, which Codex reads automatically.
+
+### opencode
+```
+npx @drafthq/draft install opencode
+```
+Default `--project`. Writes `AGENTS.md` and bundles skills under `~/.agents/skills/draft`.
+
+### GitHub Copilot & Gemini
+Not `draft install` hosts — copy the committed instructions file directly:
+```
+curl -o .github/copilot-instructions.md https://raw.githubusercontent.com/drafthq/draft/main/integrations/copilot/.github/copilot-instructions.md
+curl -o .gemini.md https://raw.githubusercontent.com/drafthq/draft/main/integrations/gemini/.gemini.md
+```
+
+## Core Workflow
+
+**Before the cycle:** `/draft:review` requires no setup. On a repo with no `draft/` directory it resolves scope from git, runs Stage 1 (automated validation) and Stage 3 (code quality) against the plugin guardrails, renders the report inline without writing into the repo, and reports which structural checks it could not run — blast radius, downstream callers, dependency cycles, module boundaries. Those need the knowledge graph, which is what `/draft:init` builds. Run it first to see findings before paying for the analysis pass.
+
+The primary development cycle follows four stages:
+
+1. **`/draft:init`** — 5-phase codebase analysis. Generates architecture.md (source of truth), .ai-context.md (token-optimized AI context), .ai-profile.md (ultra-compact always-on profile), and state tracking files.
+2. **`/draft:new-track`** — Collaborative intake with structured questions, AI guidance, and progressive refinement. Produces spec.md (acceptance criteria) and plan.md (phased execution plan).
+3. **`/draft:implement`** — TDD workflow: RED (write failing test) → GREEN (make it pass) → REFACTOR. Executes plan tasks phase by phase with checkpoints and progress tracking.
+4. **`/draft:review`** — Three-stage review: (1) Automated Validation, (2) Spec Compliance, (3) Code Quality. Integrates reviewer agent and bughunt.
+
+After initial setup, `/draft:init refresh` uses stored file hashes and signal classification to only re-analyze changed files — no full re-scan needed.
+
+## Recommended Primary Interface (5 Routers)
+
+For better discoverability, use the consolidated router commands instead of the individual specialist commands:
+
+- **`/draft:plan`** — Planning & architecture router (new-track, decompose, adr, tech-debt, change)
+- **`/draft:ops`** — Operations & lifecycle router (deploy-checklist, incident-response, standup, status, revert)
+- **`/draft:docs`** — Authoring router (documentation)
+- **`/draft:discover`** — Investigation & quality router (debug, bughunt, quick/deep-review, coverage, testing-strategy, learn, tour, impact, assist-review)
+- **`/draft:jira`** — Unified Jira integration (preview, create, review <ID>)
+
+All specialist commands remain directly callable for compatibility.
+
+## All Commands (33)
+
+### Primary Workflow
+- `/draft` — Overview, intent mapping, and command reference
+- `/draft:init` — Analyze codebase, create context files and state tracking
+- `/draft:new-track` — Collaborative spec and plan with AI-guided refinement
+- `/draft:implement` — TDD workflow with checkpoints
+- `/draft:review` — 3-stage review (validation + spec compliance + code quality)
+
+### Routers (recommended entry points)
+- `/draft:plan` — Planning & architecture router (new-track, decompose, adr, tech-debt, change)
+- `/draft:ops` — Operations & lifecycle router (deploy-checklist, incident-response, standup, status, revert)
+- `/draft:docs` — Authoring router (documentation)
+- `/draft:discover` — Investigation & quality router (debug, bughunt, quick/deep-review, coverage, testing-strategy, learn, tour, impact, assist-review)
+- `/draft:integrations` — External exports & syncs router (Jira)
+
+### Quality
+- `/draft:deep-review` — Enterprise-grade module lifecycle and ACID audit
+- `/draft:bughunt` — Exhaustive 14-dimension defect discovery with taint tracking
+- `/draft:quick-review` — Lightweight 4-dimension code review
+- `/draft:coverage` — Code coverage report (target 95%+)
+- `/draft:testing-strategy` — Test plan design with coverage targets
+- `/draft:tech-debt` — Technical debt analysis across 7 dimensions
+
+### Architecture & Planning
+- `/draft:graph` — Build or refresh the knowledge-graph snapshot (codebase-memory-mcp)
+- `/draft:decompose` — Module decomposition with dependency mapping
+- `/draft:adr` — Architecture Decision Records
+- `/draft:change` — Handle mid-track requirement changes
+- `/draft:learn` — Discover coding patterns, update guardrails
+
+### Operations
+- `/draft:debug` — Structured debugging: reproduce, isolate, diagnose, fix
+- `/draft:deploy-checklist` — Pre-deployment verification with rollback triggers
+- `/draft:incident-response` — Incident lifecycle: triage, communicate, mitigate, postmortem
+- `/draft:standup` — Git activity standup summary (read-only)
+
+### Project Management
+- `/draft:status` — Show progress overview
+- `/draft:revert` — Git-aware rollback
+- `/draft:upload` — Pre-upload handoff gate (review status, HLD approvals, deploy checklist, validator chain)
+- `/draft:jira [preview|create|review <ID>]` — Unified Jira integration (generate export, push issues, qualify existing tickets)
+
+### Authoring & Onboarding
+- `/draft:documentation` — Technical docs: readme, runbook, api, onboarding
+- `/draft:tour` — Interactive architecture mentorship and codebase walkthrough
+- `/draft:impact` — ROI analytics tracking friction and timeline metrics
+- `/draft:assist-review` — Summarize intent and highlight structural PR risks for reviewers
+
+## The 7 Specialized Agents
+
+### Architect Agent
+Activated during `/draft:decompose` and `/draft:implement` (architecture mode). Guides structured pre-implementation design: module decomposition, single responsibility, clear API boundaries, dependency analysis, and Mermaid diagram generation.
+
+### Debugger Agent
+Activated when a task is blocked. Enforces root cause investigation before any fix attempts. Four-phase process: Reproduce → Isolate → Diagnose → Fix.
+
+### Planner Agent
+Activated during `/draft:new-track` plan creation and `/draft:decompose`. Provides structured plan generation with phased task breakdown, verification criteria, and dependency ordering.
+
+### Reviewer Agent
+Activated at phase boundaries during `/draft:implement`. Performs three-stage review: (1) Automated Validation — architecture conformance, dead code, circular dependencies, security; (2) Spec Compliance — acceptance criteria verification; (3) Code Quality — readability, maintainability, test coverage.
+
+### RCA Agent
+Activated for bug/RCA tracks via `/draft:new-track`. Structured Root Cause Analysis methodology extending the debugger agent with practices from Google SRE postmortem culture and distributed systems debugging. Four-phase process: Reproduce → Trace → Hypothesize → Fix with blast radius scoping.
+
+### Ops Agent
+Activated during `/draft:deploy-checklist`, `/draft:incident-response`, and `/draft:standup`. Enforces production-safety mindset: production-first thinking, blast-radius awareness, rollback readiness, communicate early, severity classification (SEV1-SEV4), and blameless culture.
+
+### Writer Agent
+Activated during `/draft:documentation` across four modes: readme, runbook, api, and onboarding. Enforces audience-aware writing: audience first, progressive disclosure, link don't duplicate, maintain don't create, examples over explanations, and scannable structure.
+
+## Context-Driven Development Methodology
+
+### The Core Problem
+AI coding assistants are powerful but undirected. Without structure, they make assumptions about requirements, choose arbitrary technical approaches, produce code that doesn't fit the existing codebase, and lack accountability checkpoints.
+
+Draft solves this through Context-Driven Development: structured documents that constrain and guide AI behavior. By treating context as a managed artifact alongside code, the repository becomes a single source of truth that drives every agent interaction.
+
+### The Constraint Hierarchy
+```
+product.md          → "Build a task manager for developers"
+tech-stack.md       → "Use React, TypeScript, Tailwind"
+architecture.md     → "Express API → Service layer → Prisma ORM → PostgreSQL"
+  .ai-context.md    → Token-optimized condensed version (100-900 lines, scaled to repo size)
+  .ai-profile.md    → Ultra-compact always-on profile (20-50 lines)
+spec.md             → "Add drag-and-drop reordering"
+plan.md             → "Phase 1: sortable list, Phase 2: persistence"
+```
+Each layer narrows the solution space. By the time AI writes code, most decisions are already made.
+
+### Context Tiering
+Three-tier context system inspired by memory architecture:
+- **Layer 0: .ai-profile.md** (20-50 lines) — Always loaded. RAM-equivalent.
+- **Layer 1: .ai-context.md** (100-900 lines, scaled to repo size) — Loaded for most tasks. Working memory.
+- **Layer 2: architecture.md** (full document) — Loaded for deep analysis. Long-term storage.
+
+Simple tasks only need Layer 0. Implementation tasks load Layer 0 + relevant sections of Layer 1. Deep reviews access all layers.
+
+## Project File Structure
+
+When users run `/draft:init`, it creates a `draft/` directory in their project:
+
+```
+draft/
+  architecture.md       — Graph-primary high-signal engineering reference (10 focused sections: Graph Health & Fidelity Dashboard first, Critical Invariants with provenance, Core Flows & State Machines, Module/Dependency Map, Concurrency/Ownership, Error & Failure Catalog, Data Truth Sources, Extension Patterns, Coverage Gaps, Relationship to Other Docs). Graph is the structural spine; explicit fidelity declarations and provenance on all claims.
+  .ai-context.md        — Token-optimized AI context, 100-900 lines by repo size (derived from architecture.md)
+  .ai-profile.md        — Ultra-compact 20-50 line always-injected profile
+  product.md            — Users, goals, success criteria, guidelines
+  tech-stack.md         — Languages, frameworks, patterns, accepted dependencies
+  workflow.md           — TDD preference, commit style, review process
+  guardrails.md         — Hard guardrails, learned conventions, anti-patterns
+  tracks/
+    <track-id>/
+      spec.md           — Acceptance criteria for this track
+      plan.md           — Ordered phases with verification steps
+      metadata.json     — Track metadata, status, and impact memory (files_touched,
+                          modules_touched, downstream_files, by_category)
+  .state/
+    freshness hashes    — File-level change detection for incremental refresh
+    signal classification — Codebase signal detection across 11 categories
+    run memory          — Cross-session continuity with resumable checkpoints
+  graph/                — Engine-only graph memory (no committed mirror)
+    schema.yaml         — The ONLY committed graph file: a gate marker (engine + node/edge
+                          counts, access: engine-live). All structural data — architecture,
+                          hotspots, module deps, routes — is queried live from the engine.
+```
+
+Status markers in tracks: `[ ]` Pending, `[~]` In Progress, `[x]` Completed, `[!]` Blocked.
+
+### Init Output Modes (monolith vs OKF)
+
+`/draft:init` packages the architecture context in one of two modes, selected
+automatically by repo tier (`DRAFT_INIT_MODE` overrides):
+
+- **`monolith`** (tiers 1–2, small repos) — a single graph-primary
+  `architecture.md` is the source of truth; `.ai-context.md` is derived from it.
+- **`okf`** (tiers 3+, larger repos) — an OKF v0.1 concept taxonomy under
+  `draft/wiki/` is the source of truth (one concept per file: overview / systems
+  / features / reference / entrypoints; cross-links form the graph),
+  `.ai-context.md` becomes the index root (Synopsis + Concept Map), and
+  `architecture.md` is a generated rendered view of the bundle. An optional
+  self-contained offline HTML viewer is emitted under `draft/wiki/web/`.
+
+Only the architecture packaging differs — `product.md`, `tech-stack.md`,
+`workflow.md`, `guardrails.md`, tracks, and `.state/` are produced in both modes.
+
+## Knowledge Graph Engine
+
+Draft installs codebase-memory-mcp, a single-binary local graph engine (tree-sitter + LSP across 159 languages), no daemon, no external service, no API key. The graph is served live by the engine; the only committed file is `draft/graph/schema.yaml` (a gate marker) — there is no committed machine-readable mirror.
+
+CLI:
+
+```
+/draft:graph [path]                                  # Index / refresh the graph in the engine
+scripts/tools/graph-callers.sh --symbol buildIndex   # Who calls this function
+scripts/tools/graph-impact.sh  --file src/auth/login.go   # Blast radius (by_category)
+scripts/tools/hotspot-rank.sh --top 10               # Top symbols by fan-in
+scripts/tools/cycle-detect.sh                        # Circular call dependencies
+scripts/tools/mermaid-from-graph.sh --diagram module-deps  # Architecture diagrams
+```
+
+Call edges carry confidence signals (resolved vs. inferred); skills weight findings accordingly.
+
+Graph wrappers fail loud. `gq_run` requires a `.rows` array; a shapeless `{}` is `source:"unavailable"` with a non-zero exit, not a measured empty result. Do not treat an empty object as "no callers / no cycles / no edges".
+
+## Deterministic Helper Tools
+
+Skills delegate mechanical work to 53 shell helpers under `scripts/tools/`, including:
+
+- `git-metadata.sh`, `parse-git-log.sh` — git introspection
+- `classify-files.sh` — language + category (code/test/doc/config) classification
+- `hotspot-rank.sh`, `cycle-detect.sh`, `mermaid-from-graph.sh` — graph wrappers
+- `graph-snapshot.sh`, `graph-impact.sh`, `graph-callers.sh` — codebase-memory-mcp graph queries (index/refresh, blast radius, callers)
+- `check-track-hygiene.sh`, `check-scope-conflicts.sh`, `verify-citations.sh`, `render-track.sh` — track-hygiene and verification helpers
+- `freshness-check.sh` — file-hash freshness verification
+- `manage-symlinks.sh` — keep `*-latest.md` symlinks pointing at the newest report
+- `parse-reports.sh` — extract structured findings from skill reports
+- `adr-index.sh` — index ADR files
+- `validate-frontmatter.sh` — YAML frontmatter validation
+- `scan-markers.sh` — TODO/FIXME/HACK marker scanning
+- `detect-test-framework.sh` — auto-detect Jest, Vitest, pytest, go test, etc.
+- `run-coverage.sh` — language-aware coverage runner
+
+All emit JSON and follow a uniform exit-code contract (0 = success, 1 = invocation error, 2 = upstream-data missing). Graph wrappers fail loud on shapeless engine JSON rather than reporting a clean empty result.
+
+## Key Differentiators
+
+- **Specs before code:** AI executes pre-approved work, not guesses
+- **Context as a managed artifact:** Structured documents constrain AI behavior
+- **Three-tier context loading:** Only loads what's needed per task, saving tokens
+- **Incremental refresh:** Hash-based change detection avoids full re-scans
+- **Platform-agnostic:** Same methodology across Claude Code, Cursor, Codex, opencode, Copilot, and Gemini
+- **TDD enforcement:** RED → GREEN → REFACTOR cycle with verification
+- **14-dimension bug hunting:** Exhaustive defect discovery beyond simple linting
+- **Built-in code intelligence:** Knowledge graph engine + 53 deterministic helpers — no external services required
+- **Track impact memory:** Each completed track records its blast radius; new tracks get overlap warnings during context load
+- **ACID compliance audits:** Enterprise-grade module lifecycle reviews
+- **7 specialized agents:** Purpose-built behaviors for architecture, debugging, planning, review, RCA, operations, and documentation
+- **Pattern learning:** Auto-discovers coding conventions and updates guardrails
+- **Free and open-source:** MIT license, $0 forever
+
+## The Draft Book
+
+A comprehensive guide to Context-Driven Development, available at https://getdraft.dev/book/
+
+### Chapters
+- 0. What is Draft? — https://getdraft.dev/book/what-is-draft/
+- 1. The Problem — https://getdraft.dev/book/the-problem/
+- 2. Context-Driven Development — https://getdraft.dev/book/context-driven-development/
+- 3. Getting Started — https://getdraft.dev/book/getting-started/
+- 4. Specs & Plans — https://getdraft.dev/book/specs-and-plans/
+- 5. Implementation — https://getdraft.dev/book/implementation/
+- 6. Review Pipeline — https://getdraft.dev/book/review-pipeline/
+- 7. Managing Tracks — https://getdraft.dev/book/managing-tracks/
+- 8. Decomposition — https://getdraft.dev/book/decomposition/
+- 9. Architecture Decision Records — https://getdraft.dev/book/adrs/
+- 10. Context Tiering — https://getdraft.dev/book/context-tiering/
+- 11. The Agent System — https://getdraft.dev/book/agent-system/
+- 12. Signal Classification — https://getdraft.dev/book/signal-classification/
+- 13. Incremental Refresh — https://getdraft.dev/book/incremental-refresh/
+- 14. Deep Review — https://getdraft.dev/book/deep-review/
+- 15. Bug Hunt — https://getdraft.dev/book/bug-hunt/
+- 16. Coverage — https://getdraft.dev/book/coverage/
+- 17. Pattern Learning — https://getdraft.dev/book/pattern-learning/
+- 18. Monorepo Federation — https://getdraft.dev/book/monorepo-federation/
+- 19. Jira Integration — https://getdraft.dev/book/jira-integration/
+- 20. Multi-IDE Support — https://getdraft.dev/book/multi-ide-support/
+- 21. Philosophy & References — https://getdraft.dev/book/philosophy-references/
+- A. Command Reference — https://getdraft.dev/book/command-reference/
+- B. File Reference — https://getdraft.dev/book/file-reference/
+
+## Graph Engine
+
+Draft's knowledge graph is powered by [codebase-memory-mcp](https://github.com/DeusData/codebase-memory-mcp) by [DeusData](https://github.com/DeusData) — a tree-sitter + LSP-grade, 159-language, 100% local graph engine with no API key required. Fetched and checksum-verified on install. The `/draft:graph` command builds the `draft/graph` snapshot.
+
+## Links
+
+- Homepage: https://getdraft.dev
+- Book: https://getdraft.dev/book/
+- Getting Started: https://getdraft.dev/book/getting-started/
+- Command Reference: https://getdraft.dev/book/command-reference/
+- File Reference: https://getdraft.dev/book/file-reference/
+- GitHub: https://github.com/drafthq/draft
+- Graph Engine: https://github.com/DeusData/codebase-memory-mcp
+- Methodology: https://github.com/drafthq/draft/blob/main/core/methodology.md
+- Concise LLM context: https://getdraft.dev/llms.txt
+
+## Author
+
+Mayur Pise — https://github.com/mayurpise · https://www.linkedin.com/in/mayurpise/ · mayur@getdraft.dev
+
+## License
+
+MIT License. Free forever. Copyright (c) 2025-2026 Mayur Pise.

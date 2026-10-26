@@ -1,0 +1,230 @@
+/* ============================================================
+   LAYOUT — Sections, containers, grids, responsive
+   ============================================================ */
+
+.section {
+    position: relative;
+    width: 100%;
+    padding: var(--section-padding) var(--gutter);
+    z-index: 1;
+}
+
+.section + .section {
+    border-top: 1px solid var(--border-subtle);
+}
+.hero-section + .section { border-top: 0; }
+
+.section-inner {
+    max-width: var(--container);
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+}
+
+/* Ambient glow behind a section head — one hue, never a rainbow */
+.section-glow {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: min(1100px, 100%);
+    height: 60%;
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 0;
+    background: radial-gradient(ellipse 55% 50% at 50% 0%, var(--glow-cyan) 0%, transparent 70%);
+}
+.section-glow--rose { background: radial-gradient(ellipse 55% 50% at 50% 0%, var(--glow-rose) 0%, transparent 70%); }
+.section-glow--amber { background: radial-gradient(ellipse 55% 50% at 50% 0%, var(--glow-amber) 0%, transparent 70%); }
+.section-glow--emerald { background: radial-gradient(ellipse 55% 50% at 50% 0%, var(--glow-emerald) 0%, transparent 70%); }
+.section-glow--cyan { background: radial-gradient(ellipse 55% 50% at 50% 0%, var(--glow-cyan) 0%, transparent 70%); }
+
+.section-subtitle {
+    font-size: clamp(1.05rem, 1.6vw, 1.2rem);
+    color: var(--text-secondary);
+    max-width: 68ch;
+    margin-bottom: 3rem;
+    text-wrap: pretty;
+}
+
+.section-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 2rem 4rem;
+    align-items: end;
+    margin-bottom: 3rem;
+}
+.section-head h2 { margin-bottom: 0; max-width: 18ch; }
+.section-head .section-subtitle { margin-bottom: 0.25rem; }
+
+/* ============================================================
+   HERO (index only — module rules live in refresh-v4.css)
+   ============================================================ */
+.hero-section {
+    padding: calc(var(--nav-height) + clamp(3rem, 8vh, 6rem)) var(--gutter) 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 1;
+    max-width: var(--container);
+    width: 100%;
+    margin: 0 auto;
+}
+
+.hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin: 2rem 0 1.25rem;
+}
+
+/* ============================================================
+   GRIDS
+   ============================================================ */
+.problem-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    margin: 0 0 2.5rem;
+}
+
+.comparison {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.bento-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 1rem;
+    grid-auto-flow: dense;
+}
+.bento-grid > * { grid-column: span 2; }
+.bento-grid > .bento-wide { grid-column: span 4; }
+
+.team-flow {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 1rem;
+    margin: 0 0 2rem;
+    position: relative;
+}
+
+.install-tabs {
+    display: inline-flex;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+}
+
+.install-panels { margin: 0 0 1.5rem; }
+.install-panel { display: none; }
+.install-panel.active { display: block; animation: panelIn 0.35s var(--ease-out); }
+
+@keyframes panelIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.dual-output {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1px;
+    margin: 0 0 2rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--border);
+}
+
+.industry-table-wrap {
+    overflow-x: auto;
+    margin: 0 0 1.5rem;
+    border-radius: var(--radius-lg);
+}
+
+.pricing-comparison {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    margin: 0 0 1.5rem;
+}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+.footer {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--border);
+    background: var(--bg-secondary);
+    padding: 4.5rem var(--gutter) 2rem;
+}
+
+.footer-inner {
+    max-width: var(--container);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr));
+    gap: 3rem 2.5rem;
+}
+
+.footer-bottom {
+    max-width: var(--container);
+    margin: 3.5rem auto 0;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+.footer-bottom p { margin: 0; color: var(--text-muted); font-size: 0.82rem; }
+.footer-bottom a { color: var(--text-secondary); }
+.footer-bottom a:hover { color: var(--accent-cyan); }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 1100px) {
+    .bento-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .bento-grid > * { grid-column: span 3; }
+    .bento-grid > .bento-wide { grid-column: span 6; }
+    .pricing-comparison { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .team-flow { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .footer-inner { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 900px) {
+    .section-head { grid-template-columns: 1fr; gap: 1rem; }
+    .section-head h2 { max-width: none; }
+    .problem-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .dual-output { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+    .section { padding: clamp(3.5rem, 8vw, 5rem) var(--gutter); }
+    .hero-section { padding-top: calc(var(--nav-height) + 2.5rem); }
+    .hero-actions { flex-direction: column; align-items: stretch; }
+    .hero-actions .btn { justify-content: center; }
+    .problem-grid, .comparison, .team-flow { grid-template-columns: 1fr; }
+    .bento-grid > *, .bento-grid > .bento-wide,     .side-nav { display: none; }
+    .footer-inner { grid-template-columns: 1fr; gap: 2rem; }
+    .footer-bottom { flex-direction: column; align-items: flex-start; }
+}
+
+@media (max-width: 480px) {
+    .pricing-comparison { grid-template-columns: 1fr; }
+}

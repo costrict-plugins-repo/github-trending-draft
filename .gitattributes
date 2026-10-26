@@ -1,0 +1,5 @@
+# Draft no longer vendors native graph binaries in-repo. The knowledge-graph
+# engine (codebase-memory-mcp) is fetched on install into ~/.cache/draft/bin
+# via scripts/fetch-memory-engine.sh (checksum-verified). See bin/README.md.
+#
+# No Git LFS objects are required for the graph engine.

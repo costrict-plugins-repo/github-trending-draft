@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Changelog — Draft</title>
+    <meta name="description" content="Release history and updates for Draft, the Context-Driven Development plugin for AI coding agents. Graph engine: codebase-memory-mcp (159 languages, 100% local).">
+    <meta name="author" content="Mayur Pise">
+    <meta name="theme-color" content="#06080e">
+    <meta name="robots" content="index, follow">
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <meta property="og:title" content="Changelog — Draft">
+    <meta property="og:description" content="Release history and updates for Draft, the Context-Driven Development plugin for AI coding agents. Graph engine: codebase-memory-mcp (159 languages, 100% local).">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://getdraft.dev/changelog/">
+    <meta property="og:image" content="https://getdraft.dev/social-preview.png?v=400">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Draft Changelog — Release History">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Changelog — Draft">
+    <meta name="twitter:description" content="Release history and updates for Draft, the Context-Driven Development plugin for AI coding agents. Graph engine: codebase-memory-mcp (159 languages, 100% local).">
+    <meta name="twitter:image" content="https://getdraft.dev/social-preview.png?v=400">
+    <meta name="twitter:image:alt" content="Draft Changelog — Release History">
+    <link rel="canonical" href="https://getdraft.dev/changelog/">
+    <link rel="alternate" hreflang="en" href="https://getdraft.dev/changelog/">
+    <link rel="alternate" hreflang="x-default" href="https://getdraft.dev/changelog/">
+    <link rel="alternate" type="application/rss+xml" title="Draft Blog RSS" href="/feed.xml">
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {"@type": "ListItem", "position": 1, "name": "Home", "item": "https://getdraft.dev/"},
+        {"@type": "ListItem", "position": 2, "name": "Changelog", "item": "https://getdraft.dev/changelog/"}
+      ]
+    }
+    </script>
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-F6X062B4B7"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'G-F6X062B4B7');
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" as="style"
+        href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        onload="this.onload=null;this.rel='stylesheet'">
+    <noscript>
+        <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    </noscript>
+
+    <link rel="stylesheet" href="../css/base.css">
+    <link rel="stylesheet" href="../css/redesign-v24.css">
+    <link rel="stylesheet" href="../css/layout.css">
+    <link rel="stylesheet" href="../css/components.css">
+
+    <style>
+        /* Changelog-specific styles */
+        .changelog-hero {
+            padding: 8rem 2rem 3rem;
+            text-align: center;
+        }
+        .changelog-hero h1 {
+            font-size: clamp(2.5rem, 6vw, 4rem);
+            margin-bottom: 1rem;
+        }
+        .changelog-hero p {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .changelog-content {
+            max-width: 740px;
+            margin: 0 auto;
+            padding: 2rem 2rem 6rem;
+        }
+        .changelog-entry {
+            position: relative;
+            padding: 2.5rem 0;
+        }
+        .changelog-entry + .changelog-entry {
+            border-top: 1px solid var(--border);
+        }
+        .changelog-entry-header {
+            display: flex;
+            align-items: baseline;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+        }
+        .changelog-version {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+        }
+        .changelog-date {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .changelog-tag {
+            display: inline-block;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            background: var(--glow-cyan);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(37, 99, 235, 0.15);
+        }
+        .changelog-tag--latest {
+            background: var(--glow-emerald);
+            color: var(--accent-emerald);
+            border-color: rgba(5, 150, 105, 0.2);
+        }
+        .changelog-changes {
+            list-style: none;
+            padding: 0;
+        }
+        .changelog-changes li {
+            position: relative;
+            padding: 0.4rem 0 0.4rem 1.5rem;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+        .changelog-changes li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0.85rem;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--border);
+        }
+        .changelog-changes li strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        .changelog-changes code {
+            font-size: 0.8em;
+        }
+        .changelog-category {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--accent-cyan);
+            margin: 1.25rem 0 0.5rem;
+        }
+        .changelog-category:first-child {
+            margin-top: 0;
+        }
+        @media (max-width: 768px) {
+            .changelog-hero {
+                padding: 6rem 1.25rem 2rem;
+            }
+            .changelog-content {
+                padding: 1.5rem 1.25rem 4rem;
+            }
+            .changelog-entry-header {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+    <script>
+    (function(){try{if(localStorage.getItem('draft-theme')==='light')document.documentElement.removeAttribute('data-theme');}catch(e){}})();
+    </script>
+</head>
+<body>
+    <!-- Top navigation -->
+    <nav class="top-nav" id="top-nav" aria-label="Primary">
+        <a href="../" class="nav-logo" aria-label="Draft home">
+            <svg class="logo-mark" viewBox="0 0 26 26" fill="none" aria-hidden="true">
+                <path class="lm-edge" d="M6 19L13 7L20 19M6 19H20" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle class="lm-node" cx="6" cy="19" r="2.6"/>
+                <circle class="lm-node" cx="20" cy="19" r="2.6"/>
+                <circle class="lm-hot" cx="13" cy="7" r="3"/>
+            </svg>
+            Draft
+        </a>
+        <div class="nav-links" id="nav-links">
+            <a href="../#playground">Engine</a>
+            <a href="../#commands">Workflow</a>
+            <a href="../#features">Capabilities</a>
+            <a href="../#install">Install</a>
+            <a href="../book/">Book</a>
+            <a href="../blog/">Blog</a>
+        </div>
+        <div class="nav-actions" id="nav-actions">
+            <a href="../changelog/" class="nav-version active" title="Release notes">v5.0.3</a>
+            <a href="https://github.com/drafthq/draft" target="_blank" rel="noopener noreferrer" class="nav-github">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                Star on GitHub
+                <span class="gh-stars" id="gh-stars"></span>
+            </a>
+        </div>
+        <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="nav-links nav-actions">
+            <span></span><span></span><span></span>
+        </button>
+    </nav>
+
+    <!-- Hero -->
+    <section class="changelog-hero">
+        <h1>Changelog</h1>
+        <p>Release history and updates for Draft.</p>
+    </section>
+
+    <!-- Changelog entries -->
+    <main class="changelog-content">
+
+        <!-- v5.0.3 -->
+        <article class="changelog-entry">
+            <div class="changelog-entry-header">
+                <span class="changelog-version">v5.0.3</span>
+                <span class="changelog-date">2026-10-07</span>
+                <span class="changelog-tag changelog-tag--latest">Latest</span>
+                <span class="changelog-tag">Tools</span>
+            </div>
+            <div class="changelog-category">Fixed</div>
+            <ul class="changelog-changes">
+                <li><strong><code>fix-whitespace.sh</code> no longer truncates Markdown files on macOS.</strong> Its trailing-blank-line collapse used a GNU-only <code>sed</code> construct; BSD <code>sed</code> rejected it and the empty output was written back over the file while the run reported success. Decompose cleanup and condensation (<code>architecture.md</code>, <code>.ai-context.md</code>, <code>.ai-profile.md</code>) both call it. The collapse is now portable <code>awk</code>, and the tool refuses to replace a file that has content with whitespace-only output.</li>
+                <li><strong><code>check-track-hygiene.sh</code> no longer crashes on a track with a <code>plan.md</code> but no <code>hld.md</code> or <code>lld.md</code>.</strong> The plan-staleness check treats a missing sibling as nothing to compare.</li>
+                <li><strong>npm catches up.</strong> v5.0.2 was tagged but never published to npm; this release carries its README correction to the npm package page.</li>
+            </ul>
+        </article>
+
+        <!-- v5.0.2 -->
+        <article class="changelog-entry">
+            <div class="changelog-entry-header">
+                <span class="changelog-version">v5.0.2</span>
+                <span class="changelog-date">2026-09-21</span>
+                <span class="changelog-tag">Docs</span>
+            </div>
+            <div class="changelog-category">Fixed</div>
+            <ul class="changelog-changes">
+                <li><strong>The README describes the 5.0 graph tools.</strong> Impact analysis reports dependents through calls and imports with a code/test split (no doc/config buckets), callers carry a fail-loud status instead of confidence signals, hotspots rank on fan-in plus measured complexity, every query refreshes the index first, and the engine install is checked against pinned hashes. This release republishes the npm package so its page shows the corrected README.</li>
+            </ul>
+        </article>
+
+        <!-- v5.0.1 -->
+        <article class="changelog-entry">
+            <div class="changelog-entry-header">
+                <span class="changelog-version">v5.0.1</span>
+                <span class="changelog-date">2026-09-21</span>
+                <span class="changelog-tag">Website</span>
+                <span class="changelog-tag">Release</span>
+            </div>
+            <div class="changelog-category">Changed</div>
+            <ul class="changelog-changes">
+                <li><strong><code>npm version</code> bumps the website&rsquo;s version labels too.</strong> The nav version pill on every page, the landing hero&rsquo;s REV, and the book&rsquo;s REV now move with <code>package.json</code> in the release commit, and a test fails if any of them drift.</li>
+            </ul>
+            <div class="changelog-category">Fixed</div>
+            <ul class="changelog-changes">
+                <li><strong>The landing page&rsquo;s graph demos match the 5.0 tools.</strong> The playground&rsquo;s six queries show each tool&rsquo;s real output, and the hero ledger reports <code>code &middot; test</code> as <code>graph-impact</code> does. The engine blog post and contributor docs are aligned with 5.0.</li>
+                <li><strong>The hero no longer overflows on phones.</strong> On narrow screens the tagline, install command, stats, and Impact Console were cut off at the right edge; they now fit, with the install command truncating beside its Copy button.</li>
+            </ul>
+        </article>
+
+        <!-- v5.0.0 -->
+        <article class="changelog-entry">
+            <div class="changelog-entry-header">
+                <span class="changelog-version">v5.0.0</span>
+                <span class="changelog-date">2026-09-21</span>
+                <span class="changelog-tag">Graph</span>
+                <span class="changelog-tag">Security</span>
+                <span class="changelog-tag">Website</span>
+            </div>
+            <div class="changelog-category">Changed</div>
+            <ul class="changelog-changes">
+                <li><strong>Website redesigned around the graph.</strong> Dark by default with a light toggle, a new type system, and a live Impact Console hero that ripples one file&rsquo;s blast radius out by depth. One nav and footer across the landing page, blog, changelog, and what-is-draft pages.</li>
+                <li><strong><code>graph-impact.sh</code> measures blast radius.</strong> <code>--file</code> now returns the file&rsquo;s dependents &mdash; callers of anything defined in it, up to <code>--depth</code>, plus the files that import it &mdash; instead of its own changed symbols. <code>--symbol</code> entries carry caller file paths. Both add <code>downstream_files</code>, <code>affected_modules</code>, <code>max_depth</code>, <code>by_category</code>, a fail-loud <code>status</code>, and <code>truncated</code>.</li>
+            </ul>
+            <div class="changelog-category">Added</div>
+            <ul class="changelog-changes">
+                <li><strong>Real-engine graph smoke test.</strong> A new CI job fetches the pinned engine and drives the graph tools against it; every other graph suite uses a mock. It fails 8 of 12 checks against the previous release.</li>
+            </ul>
+            <div class="changelog-category">Removed</div>
+            <ul class="changelog-changes">
+                <li><strong><code>schema.yaml</code> no longer records machine- or run-specific fields.</strong> <code>project</code>, <code>generated_at</code>, <code>changed_files</code>, and <code>impacted_symbols</code> are gone, as is <code>root_project</code> in <code>root-link.json</code>. The marker keeps the engine, its version, and the index counts.</li>
+            </ul>
+            <div class="changelog-category">Fixed</div>
+            <ul class="changelog-changes">
+                <li><strong>Live graph queries answered from a stale index.</strong> Every query now refreshes the index incrementally first (about 0.1&nbsp;s when nothing changed), so answers include the run&rsquo;s own edits.</li>
+                <li><strong>Engine download is checked against hashes pinned in the repo.</strong> A replaced release asset fails even when the release&rsquo;s own checksums agree. An install at another version is replaced, and an off-pin engine on <code>PATH</code> is flagged.</li>
+                <li><strong>Engine calls survive the next engine release.</strong> Arguments go on stdin; the positional-JSON form Draft used is deprecated upstream.</li>
+                <li><strong>Graph correctness.</strong> Symlinked repos are handled, two repos can no longer share one index, each call cycle is reported once, hotspot scores are measured for every hotspot, and indexing is memory-bounded on macOS.</li>
+                <li><strong>Docs and tooling.</strong> Cypher guidance re-verified for engine 0.9.0, agents route every engine tool through the wrappers, the context-tier formula reads live metrics, and the book generator no longer reverts the redesign.</li>
+            </ul>
+        </article>
+
+        <!-- v4.0.0 -->
+        <article class="changelog-entry">
+            <div class="changelog-entry-header">
+                <span class="changelog-version">v4.0.0</span>
+                <span class="changelog-date">2026-09-03</span>
+                <span class="changelog-tag">Graph</span>
+                <span class="changelog-tag">Security</span>
+            </div>
+            <div class="changelog-category">Changed</div>
+            <ul class="changelog-changes">
+                <li><strong>Graph wrappers fail loud on shapeless JSON.</strong> Queries require a <code>.rows</code> array; impact, callers, and diagram tools require their tool-shaped object. A bare <code>{}</code> is now <code>unavailable</code> with a non-zero exit, not a measured empty result. A failed snapshot refresh no longer rewrites <code>schema.yaml</code>.</li>
+                <li><strong><code>draft install</code> help matches host default scopes.</strong> <code>--global</code> for Claude Code and Cursor; <code>--project</code> for Codex and opencode. Missing-binary detection treats Windows status 127 as absent.</li>
+                <li><strong>Docs, website, and book aligned.</strong> Author Mayur Pise. 53 helpers, ~25,300 Copilot lines, 66 core files, 7 tech-debt dimensions, 81 test suites, REV 4.0.0.</li>
+            </ul>
+            <div class="changelog-category">Fixed</div>
+            <ul class="changelog-changes">
+                <li><strong>Engine fetch pins curl redirects to HTTPS.</strong> A compromised redirect cannot downgrade the download to HTTP.</li>
+                <li><strong>OKF viewer XSS.</strong> Table cells are escaped; <code>javascript:</code> markdown links are dropped. Catalog concept IDs and path-index values cannot escape the bundle.</li>
+                <li><strong>Hygiene and packaging.</strong> Marker scans parse paths that contain <code>:</code>; <code>package.sh</code> refuses <code>--out /</code> and versions with <code>..</code>; chapter pages are written atomically; architecture render no longer swallows link-fix failures.</li>
+            </ul>
+        </article>
+
+        <!-- v3.7.2 -->
+        <article class="changelog-entry">
+            <div class="changelog-entry-header">
+                <span class="changelog-version">v3.7.2</span>
+                <span class="changelog-date">2026-08-19</span>
+                <span class="changelog-tag">Graph</span>
+            </div>
+            <div class="changelog-category">Fixed</div>
+            <ul class="changelog-changes">
+                <li><strong>Hotspot ranking reported unmeasured complexity as zero.</strong> When the property query failed, every symbol came back with complexity and cognitive scores of 0, those zeros were summed into the ranking score, and the result still claimed the graph had answered &mdash; a fan-in-only ranking was indistinguishable from a fully measured one. The run now records whether enrichment loaded, and omits what it could not measure.</li>
+                <li><strong>Diagram generation could not tell a broken engine from an empty graph.</strong> Both rendered "graph not built", so a repo with genuinely no cross-file imports looked like a failed index. The two now render distinctly.</li>
+            </ul>
+        </article>
+
+        <!-- v3.7.1 -->
+        <article class="changelog-entry">
+            <div class="changelog-entry-header">
+                <span class="changelog-version">v3.7.1</span>
+                <span class="changelog-date">2026-08-19</span>
+                <span class="changelog-tag">Graph</span>
+            </div>
+            <div class="changelog-category">Fixed</div>
+            <ul class="changelog-changes">
+                <li><strong>Cycle detection reported a clean result from a query that never ran.</strong> A failed graph query was swallowed and the tool carried on, emitting <code>source:"memory-graph"</code> with zero cycles &mdash; the one failure mode a caller cannot detect. A failed query now reports <code>unavailable</code>, as every sibling tool already did.</li>
+                <li><strong>Two-node cycle detection had never worked.</strong> The query compared one property against another, which the graph engine's parser rejects, so it failed on every call &mdash; hidden by the bug above. Mutual recursion went undetected while the tool reported success. The comparison is gone and the de-duplication it was doing now happens after the query.</li>
+            </ul>
+        </article>
+
+        <!-- v3.7.0 -->
+        <article class="changelog-entry">
+            <div class="changelog-entry-header">
+                <span class="changelog-version">v3.7.0</span>
+                <span class="changelog-date">2026-08-19</span>
+                <span class="changelog-tag">Review</span>
+                <span class="changelog-tag">Security</span>
+                <span class="changelog-tag">CI</span>
+                <span class="changelog-tag">Releases</span>
+            </div>
+            <div class="changelog-category">Added</div>
+            <ul class="changelog-changes">
+                <li><strong><code>/draft:review</code> runs with zero setup.</strong> A missing <code>draft/</code> directory is now a supported mode rather than an error. The review resolves scope from git, runs automated validation plus the four code-quality dimensions against the plugin guardrails, renders the report in the conversation without writing into your repo, and closes by naming the specific structural checks &mdash; blast radius, downstream callers, dependency cycles, module boundaries &mdash; that <code>/draft:init</code> would have added. Indexing is now the upgrade, not the entry fee.</li>
+                <li><strong>Continuous integration.</strong> Test suites, lint, an integrations-freshness check, and &mdash; new &mdash; the install path itself now run on every push and pull request.</li>
+                <li><strong><code>check-repo-size.sh</code></strong> fails the build when the tree at HEAD exceeds a size cap. This is the test that would have caught the v2.8.3 install hang, where ~670&nbsp;MB of audio in HEAD stalled the first install step with no error message.</li>
+                <li><strong><code>install-smoke-test.sh</code></strong> reproduces a new user's first install on a throwaway shallow clone: manifest discovery, skill frontmatter validation, and a <code>--dry-run</code> writer pass per host against an empty HOME.</li>
+                <li><strong>A GitHub Release per tag.</strong> Every <code>vX.Y.Z</code> tag now publishes a Release with notes extracted from the changelog, so the release history matches the changelog automatically.</li>
+                <li><strong><code>DRAFT_STRICT_VERIFY=1</code></strong> makes an unverifiable graph-engine download fatal instead of a warning. The engine's trust story &mdash; what is and is not guaranteed, and the contingency if the upstream project stalls &mdash; is now documented explicitly.</li>
+                <li><strong>Efficacy benchmark harness.</strong> A published protocol plus tooling to measure whether <code>/draft:review</code> catches defects that reached production: pre-merge worktree preparation that refuses any corpus entry whose fix is reachable from the reviewed tree, review-before-fix grading, and catch-rate / precision / graph-delta reporting. Corpus collection is next.</li>
+            </ul>
+            <div class="changelog-category">Security</div>
+            <ul class="changelog-changes">
+                <li><strong>The graph query hatch enforced read-only on one path of two.</strong> <code>graph-query.sh</code> scanned <code>--cypher</code> for write verbs but not <code>--tool query_graph</code>, which takes raw Cypher in its payload &mdash; so a delete reached the engine unchecked and could wipe the index. One guard now covers both entry points, and any tool payload carrying a <code>query</code> field.</li>
+                <li><strong>Any repository could hijack which scripts Draft executes.</strong> <code>resolve-tools.sh</code> returned <code>$PWD/scripts/tools</code> ahead of the install marker and the plugin registry, so a repo shipping that path captured execution &mdash; and reviewing unfamiliar code is a primary use case. The installed plugin now wins; the working directory is a last resort gated on Draft's own manifest. Work on Draft itself with <code>DRAFT_PLUGIN_ROOT="$PWD"</code>.</li>
+                <li><strong>Atomic rewrites widened file permissions.</strong> Writing a temp file and renaming it over the target discards the target's mode, so a deliberately <code>0600</code> <code>~/.claude/settings.json</code> came back <code>0644</code>, and normalised documents came back owner-only. Every rewrite now carries the destination's mode across.</li>
+            </ul>
+            <div class="changelog-category">Changed</div>
+            <ul class="changelog-changes">
+                <li><strong>The lint gate blocks.</strong> markdownlint ran advisory against a backlog too large to enforce against; the backlog is cleared &mdash; 1,691 violations to zero &mdash; so anything it reports now came from the change under review. CI installs a pinned, checksum-verified shellcheck instead of apt-installing it, after the package step stalled twice and left both blocking checks skipped.</li>
+                <li><strong>The funnel is inverted.</strong> Documentation now orders the flow <code>review &rarr; init &rarr; review</code>, and the README leads with five commands instead of thirty-three; the full reference moved to a dedicated page.</li>
+                <li><strong>Marketing copy replaced with output.</strong> The "Maturity Level 4/5 / on par with Staff Engineer practices at FAANG" framing is gone, replaced by three real defects <code>/draft:review</code> found in Draft's own codebase and the graph query that scopes them.</li>
+            </ul>
+        </article>
+
+        <!-- v3.6.0 -->
+        <article class="changelog-entry">
+            <div class="changelog-entry-header">
+                <span class="changelog-version">v3.6.0</span>
+                <span class="changelog-date">2026-07-15</span>
+                <span class="changelog-tag">Review</span>
+                <span class="changelog-tag">Hardening</span>
+            </div>
+            <div class="changelog-category">Fixed</div>
+            <ul class="changelog-changes">
+                <li><strong>Full-codebase review release.</strong> A ten-angle review with per-finding adversarial verification produced 37 confirmed findings, all fixed.</li>
+                <li><strong>Validators no longer crash on clean input.</strong> <code>check-track-hygiene.sh</code> (zero TBD markers) and <code>verify-doc-anchors.sh</code> aborted under <code>set -euo pipefail</code> with no output; both now pass clean tracks.</li>
+                <li><strong>Validators no longer silently pass bad input.</strong> <code>okf-validate.sh</code> skipped pretty-printed path-index arrays; <code>verify-citations.sh</code> truncated <code>file:LO-HI</code> ranges to <code>LO</code>, so drifted range ends were never checked.</li>
+                <li><strong>Graph tooling hardening.</strong> <code>gq_escape</code> now escapes backslashes (Cypher string-literal breakout); <code>graph-impact.sh</code> reports engine failures as <code>source:"unavailable"</code> instead of fabricating empty results.</li>
+            </ul>
+        </article>
+
+        <!-- v3.5.x -->
+        <article class="changelog-entry">
+            <div class="changelog-entry-header">
+                <span class="changelog-version">v3.5.0 &ndash; v3.5.3</span>
+                <span class="changelog-date">2026-06-20 &rarr; 2026-06-25</span>
+                <span class="changelog-tag">Wiki</span>
+                <span class="changelog-tag">Init</span>
+            </div>
+            <div class="changelog-category">Added</div>
+            <ul class="changelog-changes">
+                <li><strong>Deterministic wiki completeness gates (v3.5.0)</strong> &mdash; <code>okf-plan-concepts.sh</code> and <code>okf-coverage-check.sh</code> enforce that a wiki-mode bundle covers the full module surface before an init or refresh is accepted.</li>
+            </ul>
+            <div class="changelog-category">Fixed</div>
+            <ul class="changelog-changes">
+                <li><strong>Init indexing is memory-bounded (v3.5.1)</strong> &mdash; the engine index run is wrapped in a cgroup scope capped at 25% of system RAM, so indexing a large repo can no longer exhaust the machine.</li>
+                <li><strong>Wiki completeness is enforced (v3.5.2)</strong> &mdash; <code>/draft:init</code> now requires a concept page for every module, rejects empty or shallow pages, and fails on broken index links.</li>
+                <li><strong>Bundle conforms to the OKF v0.1 spec (v3.5.3)</strong> &mdash; the emitted <code>draft/wiki/</code> bundle carries the spec-required index frontmatter and generates <code>coverage.md</code>, so downstream consumers can validate its shape.</li>
+            </ul>
+            <div class="changelog-category">Changed</div>
+            <ul class="changelog-changes">
+                <li>User-facing prose says "wiki" instead of "OKF" throughout the docs.</li>
+            </ul>
+        </article>
+
+        <!-- v3.4.0 -->
+        <article class="changelog-entry">
+            <div class="changelog-entry-header">
+                <span class="changelog-version">v3.4.0</span>
+                <span class="changelog-date">2026-06-20</span>
+                <span class="changelog-tag">Retrieval</span>
+                <span class="changelog-tag">Wiki</span>
+            </div>
+            <div class="changelog-category">Added</div>
+            <ul class="changelog-changes">
+                <li><strong>Tree-search retrieval over the wiki bundle (PageIndex-style).</strong> Agents locate context by navigating the Concept Map tree &mdash; reading each node's routing description and descending only matching subtrees &mdash; instead of loading sections by a static heuristic. No embeddings, no chunking: relevance is decided by reasoning over the tree, with a budget of roughly five pages and two hops. Wiki-mode projects route to tree-search; monolith mode keeps static section-scoring.</li>
+            </ul>
+            <div class="changelog-category">Changed</div>
+            <ul class="changelog-changes">
+                <li>Website, book, and blog refresh: new "Drafting Table" hero identity, refreshed social and meta copy, professionalized footer, and two new blog posts on vectorless retrieval.</li>
+            </ul>
+        </article>
+
+        <!-- v3.3.1 -->
+        <article class="changelog-entry">
+            <div class="changelog-entry-header">
+                <span class="changelog-version">v3.3.1</span>
+                <span class="changelog-date">2026-06-19</span>
+                <span class="changelog-tag">Init</span>
+                <span class="changelog-tag">Docs</span>
+            </div>
+            <div class="changelog-category">Fixed</div>
+            <ul class="changelog-changes">
+                <li><strong><code>/draft:init refresh</code> never regenerated the wiki bundle.</strong> Refresh Mode described only the monolith path, so running <code>refresh</code> on a wiki-initialized repo treated the <em>generated</em> <code>architecture.md</code> as the source of truth and never re-narrated the concept taxonomy. Refresh now detects wiki mode and regenerates only the concepts grounded in changed files, carrying the rest forward from cache.</li>
+            </ul>
+            <div class="changelog-category">Changed</div>
+            <ul class="changelog-changes">
+                <li>Documentation, website, and book synced to v3.3.0; stale counts corrected across the docs.</li>
+            </ul>
+        </article>
+
+        <!-- v3.3.0 -->
+        <article class="changelog-entry">
+            <div class="changelog-entry-header">
+                <span class="changelog-version">v3.3.0</span>
+                <span class="changelog-date">2026-06-19</span>
+                <span class="changelog-tag">Init</span>
+                <span class="changelog-tag">OKF</span>
+                <span class="changelog-tag">Cursor</span>
+            </div>
+            <div class="changelog-category">Added</div>
+            <ul class="changelog-changes">
+                <li><strong><code>/draft:init</code> OKF taxonomy emitter (tier-gated default)</strong> &mdash; an init output mode that replaces the monolithic <code>architecture.md</code> with an OKF v0.1 concept bundle under <code>draft/wiki/</code> (one concept per file, cross-links form the graph), repurposes <code>.ai-context.md</code> as the index root (Synopsis + Concept Map), and demotes <code>architecture.md</code> to a generated rendered view. <code>DRAFT_INIT_MODE</code> defaults to tier-gated <code>auto</code> (tiers 1&ndash;2 &rarr; <code>monolith</code>, tiers 3&ndash;5 &rarr; <code>okf</code>); an explicit <code>monolith</code>/<code>okf</code> overrides. All other <code>draft/</code> files are produced in both modes &mdash; only the architecture packaging differs.</li>
+                <li><strong><code>scripts/tools/okf-validate.sh</code></strong> &mdash; the one new deterministic helper: fails the build on dangling cross-links, missing/invalid frontmatter, out-of-vocab concept <code>type</code>, or an incomplete <code>path-to-concept.json</code> index. Verified against the call graph (ground truth), not heuristics.</li>
+                <li><strong><code>scripts/tools/okf-render-views.sh</code></strong> &mdash; deterministic renderer for the demoted views: <code>architecture.md</code> becomes a generated linear concat of the bundle (canonical section order, banner + TOC), and the Concept Map routing table is injected into the index roots. <code>--web</code> additionally emits a self-contained offline HTML viewer (single file, inlined pages, built-in markdown renderer, sidebar + search; no server/CDN).</li>
+                <li><strong>Cursor-native plugin manifest</strong> &mdash; <code>.cursor-plugin/plugin.json</code> (source of truth for Cursor discovery, version-synced alongside the Claude manifests), plus <code>cli/src/lib/cursor-registry.js</code> and <code>cli/src/lib/plugin-manifest.js</code> helpers.</li>
+            </ul>
+            <div class="changelog-category">Fixed</div>
+            <ul class="changelog-changes">
+                <li><strong>Cursor install never surfaced <code>/draft:*</code> commands</strong> &mdash; <code>draft install cursor</code> copied the plugin tree to <code>~/.cursor/plugins/local/draft/</code> but never registered or enabled it, so skills and slash commands never appeared in Cursor chat. The installer now ships the Cursor-native manifest and registers + enables <code>draft@draft-plugins</code> in the shared Claude plugin registry that current Cursor builds read. Registry writes are atomic and non-destructive. Existing installs upgrade with <code>draft install cursor --force</code>.</li>
+            </ul>
+        </article>
+
+        <!-- v3.2.1 -->
+        <article class="changelog-entry">
+            <div class="changelog-entry-header">
+                <span class="changelog-version">v3.2.1</span>
+                <span class="changelog-date">2026-06-15</span>
+                <span class="changelog-tag">Tooling</span>
+                <span class="changelog-tag">Fix</span>
+            </div>
+            <div class="changelog-category">Fixed</div>
+            <ul class="changelog-changes">
+                <li><strong>Graph tooling unreachable on Claude Code marketplace / npm installs</strong> &mdash; skills invoked the bundled <code>scripts/tools/*.sh</code> helpers by bare, cwd-relative paths. Because a skill's shell runs with the cwd set to the <em>user's project</em> &mdash; not the plugin &mdash; and <code>${CLAUDE_PLUGIN_ROOT}</code> is not exported into skill-driven Bash, every graph wrapper silently failed and the knowledge-graph engine appeared unavailable. Skills now resolve a <code>DRAFT_TOOLS</code> directory (install marker &rarr; plugin cache glob &rarr; marketplace clone &rarr; cwd) and invoke helpers as <code>"$DRAFT_TOOLS/&lt;tool&gt;.sh"</code>.</li>
+            </ul>
+            <div class="changelog-category">Added</div>
+            <ul class="changelog-changes">
+                <li><strong><code>scripts/tools/resolve-tools.sh</code></strong> &mdash; canonical resolver that locates the bundled <code>scripts/tools/</code> dir regardless of install layout (Claude Code cache, marketplace clone, Cursor, or in-repo dev). Documented in <code>core/shared/tool-resolver.md</code>.</li>
+                <li><strong><code>draft install</code> writes <code>~/.cache/draft/plugin-root</code></strong> &mdash; an authoritative install-path marker so skills resolve the helper directory on the fast path (best-effort; resolution falls back to globbing the plugin cache if absent).</li>
+            </ul>
+        </article>
+
+        <!-- v3.2.0 -->
+        <article class="changelog-entry">
+            <div class="changelog-entry-header">
+                <span class="changelog-version">v3.2.0</span>
+                <span class="changelog-date">2026-06-14</span>
+                <span class="changelog-tag">Knowledge Graph</span>
+                <span class="changelog-tag">Tooling</span>
+            </div>
+            <div class="changelog-category">Added</div>
+            <ul class="changelog-changes">
+                <li><strong>Full codebase-memory-mcp capability adoption (graph tooling v2)</strong> &mdash; Draft now uses the whole graph engine instead of a thin ~3-edge slice. All Cypher is centralized in a new sourced module <code>scripts/tools/_graph_queries.sh</code> (single source of query truth), so a label/dialect fix is a one-line edit. New wrappers: <code>graph-query.sh</code> (read-only passthrough), <code>graph-snippet.sh</code> (verified source + caller/callee counts), <code>graph-search.sh</code> (semantic/ranked search), <code>graph-tests.sh</code> (TESTS coverage / <code>--untested</code>), <code>graph-deps.sh</code> (real <code>IMPORTS</code> graph), <code>graph-hierarchy.sh</code> (<code>INHERITS</code>), <code>graph-errors.sh</code> (<code>RAISES</code>/<code>THROWS</code>), <code>graph-risk.sh</code> (engine-precomputed risk flags), and <code>graph-traces.sh</code>. <code>graph-callers.sh</code> gains <code>--transitive[=N]</code>, <code>--prod-only</code>, and <code>--qualified</code>. Symbol-scoped wrappers emit a fail-loud <code>status</code> so an empty result is never mistaken for a confirmed true negative.</li>
+                <li><strong>Richer architecture/refresh data</strong> &mdash; <code>hotspot-rank.sh</code> now ranks by <code>fanIn + complexity + cognitive</code> and annotates entry points; <code>mermaid-from-graph.sh --diagram module-deps</code> derives the dependency diagram from real <code>IMPORTS</code> edges (with the prior co-change proxy preserved as <code>--diagram co-change</code>); <code>graph-snapshot.sh</code> records the <code>detect_changes</code> delta in the gate marker.</li>
+                <li><strong>Single-source-of-truth version sync</strong> &mdash; <code>package.json</code> is now the canonical version; <code>scripts/sync-version.sh</code> propagates it into <code>.claude-plugin/plugin.json</code>, <code>.claude-plugin/marketplace.json</code>, and the <code>web/index.html</code> release labels. It runs automatically via the npm <code>version</code> lifecycle hook, and <code>tests/test-version-sync.sh</code> fails CI if any file drifts.</li>
+            </ul>
+        </article>
+
+        <!-- v3.1 -->
+        <article class="changelog-entry">
+            <div class="changelog-entry-header">
+                <span class="changelog-version">v3.1.5</span>
+                <span class="changelog-date">2026-06-14</span>
+                <span class="changelog-tag">Breaking</span>
+                <span class="changelog-tag">Knowledge Graph</span>
+            </div>
+            <div class="changelog-category">Changed</div>
+            <ul class="changelog-changes">
+                <li><strong>The knowledge graph is now engine-only</strong> &mdash; Draft no longer commits a machine-readable mirror of the graph. <code>scripts/tools/graph-snapshot.sh</code> indexes the repo into the local <code>codebase-memory-mcp</code> engine and writes one committed file: <code>draft/graph/schema.yaml</code>, a gate marker carrying no graph data (<code>access: engine-live</code>). All structural data is queried live via the <code>graph-*.sh</code> wrappers, so it can't go stale between commits.</li>
+                <li><strong><code>draft/index.md</code> is a plain docs index</strong> &mdash; it lists the prose context files and tracks with one-line descriptions, with no OKF framing or <code>okf_version</code> frontmatter.</li>
+            </ul>
+            <div class="changelog-category">Removed</div>
+            <ul class="changelog-changes">
+                <li><strong>Open Knowledge Format (OKF) emission</strong> &mdash; deleted <code>okf-emit.sh</code>, <code>okf-bundle.sh</code>, <code>okf-check.sh</code> (and their tests). No more <code>draft/graph/okf/</code> bundle.</li>
+                <li><strong>Committed graph snapshot files</strong> &mdash; <code>architecture.json</code>, <code>hotspots.jsonl</code>, <code>module-deps.mermaid</code>, and <code>proto-map.mermaid</code> are no longer generated. They were lossy, went stale on the next commit, and duplicated what the engine serves live.</li>
+            </ul>
+        </article>
+
+        <!-- v3.0 -->
+        <article class="changelog-entry">
+            <div class="changelog-entry-header">
+                <span class="changelog-version">v3.0</span>
+                <span class="changelog-date">2026-06-14</span>
+                <span class="changelog-tag">Breaking</span>
+                <span class="changelog-tag">Knowledge Graph</span>
+            </div>
+            <div class="changelog-category">Changed</div>
+            <ul class="changelog-changes">
+                <li><strong>One scope-aware <code>/draft:init</code></strong> &mdash; Draft now has a single entry point for building context. Run <code>/draft:init</code> at the repo root or inside any sub-module; it figures out the scope automatically.</li>
+                <li><strong>Root-first code-graph memory</strong> &mdash; init always builds the whole-repo knowledge graph (the spine) first. A sub-module gets its own snapshot plus a <code>root-link.json</code> pointing up to the root graph, so any module has full cross-module understanding regardless of where you ran init.</li>
+                <li><strong><code>--graph-only</code> and <code>--module-only</code> flags</strong> &mdash; <code>--graph-only</code> rebuilds just the code-graph memory (no markdown); <code>--module-only</code> skips touching the root.</li>
+            </ul>
+            <div class="changelog-category">Removed</div>
+            <ul class="changelog-changes">
+                <li><strong><code>/draft:index</code> removed (breaking)</strong> &mdash; folded into the scope-aware <code>/draft:init</code>. Monorepo context now comes from running init at the root (sparse root map + graph spine) and in each sub-module (detailed context + root link). The multi-directory bug sweep moved to <code>/draft:bughunt</code>. Total surface: <strong>33 skills</strong>.</li>
+            </ul>
+        </article>
+
+        <article class="changelog-entry">
+            <div class="changelog-entry-header">
+                <span class="changelog-version">v2.8</span>
+                <span class="changelog-date">2026-06-14</span>
+                <span class="changelog-tag">Install</span>
+                <span class="changelog-tag">Knowledge Graph</span>
+            </div>
+            <div class="changelog-category">Fixed</div>
+            <ul class="changelog-changes">
+                <li><strong>v2.8.3 &mdash; <code>install claude-code</code> no longer hangs</strong> &mdash; <code>claude plugin marketplace add</code> git-clones the repo, and ~670&nbsp;MB of audiobook <code>.m4a</code> files in HEAD made even the shallow clone download everything, stalling the install on its first step. The audio now ships as a GitHub Release asset (removed from the repo), shrinking the marketplace clone from ~535&nbsp;MB to under 2&nbsp;MB. The installer also gained a per-step timeout so a stalled network op prints the manual fallback instead of hanging forever.</li>
+                <li><strong>v2.8.2 &mdash; routers, upload &amp; integrations now in the README</strong> &mdash; the command reference previously listed only specialist leaf commands; it now documents the 4 top-tier routers (<code>/draft:plan</code>, <code>/draft:ops</code>, <code>/draft:docs</code>, <code>/draft:discover</code>), the <code>/draft:upload</code> handoff gate, and the <code>/draft:integrations</code> parent command.</li>
+                <li><strong>Counts corrected site-wide</strong> &mdash; the total surface is <strong>34 skills</strong> (4 primary + 5 routers + 25 specialists). Stale "33 commands / 22 specialists" copy is now aligned to the actual count.</li>
+            </ul>
+            <div class="changelog-category">Knowledge Graph</div>
+            <ul class="changelog-changes">
+                <li><strong>v2.8.1 &mdash; graph engine fetch no longer 404s</strong> &mdash; <code>scripts/fetch-memory-engine.sh</code> pinned <code>codebase-memory-mcp</code> to <code>v0.7.0</code>, which publishes no binary assets, so every fetch failed with a 404 and graph features stayed unavailable. Bumped the pin to <code>v0.8.1</code> (current release with published darwin/linux assets and a verified <code>checksums.txt</code>).</li>
+            </ul>
+            <div class="changelog-category">Installation</div>
+            <ul class="changelog-changes">
+                <li><strong>v2.8.0 &mdash; graph engine fetched on every install</strong> &mdash; <code>draft install</code> now downloads the <code>codebase-memory-mcp</code> engine for all hosts (<code>claude-code</code>, <code>codex</code>, <code>opencode</code>), not just cursor. The download stays best-effort and network-gated, and remains opt-out via <code>--no-graph</code>.</li>
+                <li><strong>v2.8.0 &mdash; <code>claude-code install</code> upgrades existing plugins</strong> &mdash; re-running the installer now runs four idempotent <code>claude plugin</code> steps (<code>marketplace add</code>, <code>marketplace update</code>, <code>install</code>, <code>update</code>), so existing users are bumped to the latest version instead of short-circuiting on "already installed".</li>
+            </ul>
+        </article>
+
+        <!-- v2.7 -->
+        <article class="changelog-entry">
+            <div class="changelog-entry-header">
+                <span class="changelog-version">v2.7</span>
+                <span class="changelog-date">2026-06-13</span>
+                <span class="changelog-tag">Install</span>
+            </div>
+            <div class="changelog-category">Installation</div>
+            <ul class="changelog-changes">
+                <li><strong>One-command npm install &mdash; <code>draft install &lt;host&gt;</code></strong> &mdash; Installation is now an npm CLI (<code>@drafthq/draft</code>). Run <code>npx @drafthq/draft install &lt;host&gt;</code> (or <code>npm install -g @drafthq/draft</code> then <code>draft install &lt;host&gt;</code>), where <code>&lt;host&gt;</code> is <code>claude-code</code>, <code>cursor</code>, <code>codex</code>, or <code>opencode</code>. <code>draft list</code> shows every host and where it installs.</li>
+                <li><strong>Self-contained installs</strong> &mdash; the CLI bundles all assets, so there is no runtime <code>git clone</code>. Flags: <code>--global</code>/<code>--project</code> for scope, <code>--dry-run</code> to preview, <code>--force</code> to overwrite, <code>--no-graph</code> to skip the engine fetch.</li>
+                <li><strong>New cross-host <code>AGENTS.md</code></strong> &mdash; the build pipeline now also generates <code>integrations/agents/AGENTS.md</code> (full inlined methodology, native agent names preserved), used by the Codex and opencode installers.</li>
+                <li><strong>Retired <code>scripts/install.sh</code></strong> &mdash; the <code>curl | bash</code> universal installer is removed. GitHub Copilot and Gemini are no longer installable hosts; copy their committed instructions file directly.</li>
+            </ul>
+        </article>
+
+        <!-- v2.6 -->
+        <article class="changelog-entry">
+            <div class="changelog-entry-header">
+                <span class="changelog-version">v2.6</span>
+                <span class="changelog-date">2026-06-11</span>
+                <span class="changelog-tag">Knowledge Graph</span>
+            </div>
+            <div class="changelog-category">Knowledge Graph</div>
+            <ul class="changelog-changes">
+                <li><strong>New graph engine &mdash; <code>codebase-memory-mcp</code></strong> &mdash; Draft's knowledge graph now runs on <a href="https://github.com/DeusData/codebase-memory-mcp" target="_blank" rel="noopener noreferrer">codebase-memory-mcp</a>: tree-sitter + LSP-grade resolution across <strong>159 languages</strong>, 100% local, no API key. The previous in-house Node.js + tree-sitter-WASM engine is retired.</li>
+                <li><strong>Fetch-on-install</strong> &mdash; the engine is downloaded and checksum-verified into <code>~/.cache/draft/bin</code> at install time (<code>scripts/fetch-memory-engine.sh</code>) instead of being vendored. Resolution order: <code>DRAFT_MEMORY_BIN</code> &rsaquo; PATH &rsaquo; managed cache &rsaquo; vendored. Opt out with <code>DRAFT_MEMORY_DISABLE=1</code>.</li>
+                <li><strong>New <code>/draft:graph</code> command</strong> &mdash; initialize or refresh the <code>draft/graph/</code> snapshot for any repo, ensure the engine is present, then report module counts, hotspots, and cycles.</li>
+                <li><strong>Lightweight committed snapshot</strong> &mdash; <code>draft/graph/</code> now holds <code>schema.yaml</code>, <code>architecture.json</code>, <code>hotspots.jsonl</code>, and <code>*.mermaid</code> instead of the per-language JSONL indexes. Live structural queries run on demand against the engine.</li>
+            </ul>
+            <div class="changelog-category">Tooling</div>
+            <ul class="changelog-changes">
+                <li><strong>New graph tools</strong> &mdash; <code>graph-snapshot.sh</code> (committed snapshot), <code>graph-impact.sh</code> (file/symbol blast radius), <code>graph-callers.sh</code> (caller enumeration), plus <code>fetch-memory-engine.sh</code> (pinned, checksum-verified install).</li>
+                <li>New test suites for the graph tools; all 25+ suites plus <code>make build</code> and <code>make lint</code> pass clean.</li>
+            </ul>
+            <div class="changelog-category">Infrastructure</div>
+            <ul class="changelog-changes">
+                <li>Hardened the GitHub Pages deploy &mdash; added <code>web/CNAME</code> and <code>web/.nojekyll</code> and pinned <code>actions/configure-pages</code> to a full-length commit SHA to unblock the custom-domain deploy.</li>
+            </ul>
+        </article>
+
+        <!-- v2.5 -->
+        <article class="changelog-entry">
+            <div class="changelog-entry-header">
+                <span class="changelog-version">v2.5</span>
+                <span class="changelog-date">2026-05-17</span>
+            </div>
+            <div class="changelog-category">Workflow & Architecture</div>
+            <ul class="changelog-changes">
+                <li><strong>Command Reduction Plan</strong> &mdash; Introduced canonical parent commands (<code>/draft:plan</code>, <code>/draft:ops</code>, <code>/draft:docs</code>, <code>/draft:integrations</code>) to logically group and reduce surface-level command sprawl. Specialist commands are intelligently routed through these entry points.</li>
+                <li><strong>Phase 0 Graph Build</strong> &mdash; The knowledge graph build is now officially Phase 0 of the <code>/draft:init</code> workflow, providing exact module boundaries before analysis begins.</li>
+                <li><strong>Universal Install Script</strong> &mdash; A single <code>scripts/install.sh</code> script unifies onboarding across Claude Code, Cursor, Copilot, Gemini, and Antigravity.</li>
+            </ul>
+        </article>
+
+        <!-- v2.4 -->
+        <article class="changelog-entry">
+            <div class="changelog-entry-header">
+                <span class="changelog-version">v2.4</span>
+                <span class="changelog-date">2026-04-26</span>
+            </div>
+            <div class="changelog-category">Code Intelligence</div>
+            <ul class="changelog-changes">
+                <li><strong>Knowledge graph engine</strong> &mdash; tree-sitter + LSP-grade resolution across 159 languages, 100% local. Query tools: callers, impact, hotspots, modules, cycles, mermaid.</li>
+                <li><strong>Confidence-tagged call edges</strong> &mdash; every call edge marked <code>direct</code> (bare identifier) or <code>inferred</code> (member call) so review/bughunt can weight findings.</li>
+                <li><strong>Atomic incremental builds</strong> via per-module SHA-256 hashing &mdash; only changed modules re-extract.</li>
+                <li><strong>Track impact memory</strong> in <code>metadata.json</code> &mdash; each completed track records files touched, modules affected, downstream count, by-category breakdown. <code>/draft:new-track</code> surfaces overlap warnings during context load.</li>
+            </ul>
+            <div class="changelog-category">Tooling</div>
+            <ul class="changelog-changes">
+                <li><strong>14 deterministic shell helpers</strong> under <code>scripts/tools/</code> &mdash; git metadata, file classification, hotspot ranking, cycle detection, freshness checks, ADR indexing, test-framework detection, more. Uniform JSON output and exit-code contract; graceful degradation.</li>
+                <li><strong>16 new tool tests</strong> bringing the suite to 25 total.</li>
+                <li><code>make build</code> and <code>make lint</code> Makefile targets added.</li>
+            </ul>
+            <div class="changelog-category">Methodology</div>
+            <ul class="changelog-changes">
+                <li>Refreshed all 28 skills with deeper guidance and "Red Flags &mdash; STOP if you're..." preambles.</li>
+                <li><code>architecture.md</code> template expanded from 25 sections to <strong>28 sections + 5 appendices</strong> with tier-based output minimums for large codebases.</li>
+                <li>New shared procedures: <code>graph-query.md</code>, <code>parallel-analysis.md</code> (Map/Reduce IR &mdash; ~60% wall-clock cut at XL tier).</li>
+            </ul>
+            <div class="changelog-category">Fixes</div>
+            <ul class="changelog-changes">
+                <li>Hardened Copilot syntax transform: kebab-case skill names only, email-shaped tokens preserved.</li>
+                <li>TS module-edge resolution correctly resolves multi-segment relative imports.</li>
+                <li>JSON escape helper strips ASCII control characters.</li>
+                <li>Glob exclude patterns anchored to full-string match.</li>
+                <li>16 stale TOC anchors fixed in methodology.md.</li>
+            </ul>
+        </article>
+
+        <!-- v1.2 -->
+        <article class="changelog-entry">
+            <div class="changelog-entry-header">
+                <span class="changelog-version">v1.2</span>
+                <span class="changelog-date">2026-04-05</span>
+            </div>
+            <div class="changelog-category">Book &amp; Audiobook</div>
+            <ul class="changelog-changes">
+                <li><strong>Audiobook player</strong> with integrated playback and dedicated audio page</li>
+                <li><strong>Share buttons</strong> and deep-link support on chapter pages and audiobook player</li>
+                <li>NotebookLM audio sources for audiobook generation</li>
+            </ul>
+            <div class="changelog-category">Plugin</div>
+            <ul class="changelog-changes">
+                <li>Expanded to <strong>28 commands</strong> with restructured book for progressive disclosure</li>
+                <li>Fixed directory path handling for skills in plugin manifest</li>
+                <li>Gitignore and cleanup of 34 stale build temp files</li>
+            </ul>
+        </article>
+
+        <!-- v1.1 -->
+        <article class="changelog-entry">
+            <div class="changelog-entry-header">
+                <span class="changelog-version">v1.1</span>
+                <span class="changelog-date">2026-03</span>
+            </div>
+            <div class="changelog-category">Website</div>
+            <ul class="changelog-changes">
+                <li><strong>Full website redesign</strong> with light theme and SVG illustrations</li>
+                <li><strong>24-chapter online book</strong> covering the full CDD methodology</li>
+                <li>Migrated book from hash-based SPA to static path-based pages for SEO</li>
+                <li>Comprehensive SEO: structured data, OG tags, hreflang, sitemaps</li>
+                <li>Mobile-friendly responsive layout for website and book</li>
+                <li>Improved text contrast and readability across all cards</li>
+            </ul>
+            <div class="changelog-category">Plugin</div>
+            <ul class="changelog-changes">
+                <li><strong>v2.2.0 release</strong> &mdash; 8 new specialist commands, Draft book, website redesign</li>
+                <li>Skill enhancements and bug fixes</li>
+                <li>Deep review fixes across <code>/draft:init</code>, <code>/draft:new-track</code>, and <code>/draft:implement</code></li>
+                <li>Defensive reads, SHA delimiters, session recovery improvements</li>
+            </ul>
+            <div class="changelog-category">Infrastructure</div>
+            <ul class="changelog-changes">
+                <li>GitHub Pages deployment scoped to <code>web/</code> directory only</li>
+                <li>GA4 analytics integration across all pages</li>
+            </ul>
+        </article>
+
+        <!-- v1.0 -->
+        <article class="changelog-entry">
+            <div class="changelog-entry-header">
+                <span class="changelog-version">v1.0</span>
+                <span class="changelog-date">2026-02</span>
+            </div>
+            <div class="changelog-category">Core</div>
+            <ul class="changelog-changes">
+                <li><strong>Initial release</strong> of the Context-Driven Development plugin</li>
+                <li><strong>25 slash commands</strong> organized in a two-tier architecture: 4 primary workflow commands with auto-invocation, plus 21 specialist commands</li>
+                <li><strong>7 specialized agents</strong>: architect, debugger, planner, RCA, reviewer, ops, writer</li>
+                <li><strong>Multi-IDE support</strong>: Claude Code, GitHub Copilot, Google Gemini, Cursor</li>
+            </ul>
+            <div class="changelog-category">Build Pipeline</div>
+            <ul class="changelog-changes">
+                <li>Build script processing 28 skills with YAML frontmatter validation</li>
+                <li>Syntax transforms for platform-specific integration files</li>
+                <li>10 test suites with custom bash test framework</li>
+            </ul>
+            <div class="changelog-category">Features</div>
+            <ul class="changelog-changes">
+                <li>Signal detection across 11 categories for adaptive analysis</li>
+                <li>Incremental refresh with file-level freshness tracking</li>
+                <li>Cross-session continuity with run memory and resumable checkpoints</li>
+                <li>Skill dependency graph with execution chains</li>
+                <li>Auto-learning guardrails with pattern promotion</li>
+                <li>Jira integration with epic qualification pipeline</li>
+                <li>Hybrid integration model for Copilot and Gemini</li>
+                <li>Enterprise-grade quality skills and agent protocols</li>
+            </ul>
+        </article>
+
+    </main>
+
+    <!-- Footer -->
+    <footer id="footer" class="footer">
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <span class="footer-logo">
+                    <svg class="logo-mark" width="22" height="22" viewBox="0 0 26 26" fill="none" aria-hidden="true">
+                        <path class="lm-edge" d="M6 19L13 7L20 19M6 19H20" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle class="lm-node" cx="6" cy="19" r="2.6"/>
+                        <circle class="lm-node" cx="20" cy="19" r="2.6"/>
+                        <circle class="lm-hot" cx="13" cy="7" r="3"/>
+                    </svg>
+                    Draft
+                </span>
+                <p>Context-Driven Development for AI-powered software engineering. Draft it before your agent builds it.</p>
+                <div class="footer-social">
+                    <span class="footer-social-label">Share</span>
+                    <a href="https://api.whatsapp.com/send?text=Draft%3A%20code%20intelligence%20for%20your%20AI%20coding%20agent%20%E2%80%94%20powered%20by%20codebase-memory-mcp%2C%20a%20159-language%20local%20knowledge-graph%20engine.%20Free%2C%20open-source%2C%20MIT.%20https%3A%2F%2Fgetdraft.dev" target="_blank" rel="noopener noreferrer" class="social-btn" title="WhatsApp" aria-label="Share on WhatsApp">
+                        <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                    </a>
+                    <a href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fgetdraft.dev" target="_blank" rel="noopener noreferrer" class="social-btn" title="LinkedIn" aria-label="Share on LinkedIn">
+                        <svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                    </a>
+                    <a href="https://news.ycombinator.com/submitlink?u=https%3A%2F%2Fgetdraft.dev&t=Draft%3A%20code%20intelligence%20for%20your%20AI%20coding%20agent%20%E2%80%94%20powered%20by%20codebase-memory-mcp%2C%20a%20159-language%20local%20knowledge-graph%20engine.%20Free%2C%20open-source%2C%20MIT." target="_blank" rel="noopener noreferrer" class="social-btn" title="Hacker News" aria-label="Share on Hacker News">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M0 24V0h24v24H0zM6.951 5.896l4.047 7.61V22h2.004v-8.494l4.047-7.61h-2.19l-2.859 5.83-2.859-5.83H6.951z"/></svg>
+                    </a>
+                    <a href="https://reddit.com/submit?url=https%3A%2F%2Fgetdraft.dev&title=Draft%3A%20code%20intelligence%20for%20your%20AI%20coding%20agent%20%E2%80%94%20powered%20by%20codebase-memory-mcp%2C%20a%20159-language%20local%20knowledge-graph%20engine.%20Free%2C%20open-source%2C%20MIT." target="_blank" rel="noopener noreferrer" class="social-btn" title="Reddit" aria-label="Share on Reddit">
+                        <svg viewBox="0 0 24 24"><path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z"/></svg>
+                    </a>
+                    <a href="https://twitter.com/intent/tweet?url=https%3A%2F%2Fgetdraft.dev&text=Draft%3A%20code%20intelligence%20for%20your%20AI%20coding%20agent%20%E2%80%94%20powered%20by%20codebase-memory-mcp%2C%20a%20159-language%20local%20knowledge-graph%20engine.%20Free%2C%20open-source%2C%20MIT." target="_blank" rel="noopener noreferrer" class="social-btn" title="X" aria-label="Share on X">
+                        <svg viewBox="0 0 24 24"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg>
+                    </a>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h3>Product</h3>
+                <ul>
+                    <li><a href="../#playground">Graph engine</a></li>
+                    <li><a href="../#commands">Workflow</a></li>
+                    <li><a href="../#features">Capabilities</a></li>
+                    <li><a href="../#install">Install</a></li>
+                    <li><a href="../changelog/">Changelog</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h3>Learn</h3>
+                <ul>
+                    <li><a href="../what-is-draft/">What is Draft?</a></li>
+                    <li><a href="../book/">The Draft Book</a></li>
+                    <li><a href="../book/audio/">Audiobook</a></li>
+                    <li><a href="../book/command-reference/">Command reference</a></li>
+                    <li><a href="../blog/">Blog</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h3>Community</h3>
+                <ul>
+                    <li><a href="https://github.com/drafthq/draft" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+                    <li><a href="https://github.com/drafthq/draft/issues" target="_blank" rel="noopener noreferrer">Issues</a></li>
+                    <li><a href="https://www.npmjs.com/package/@drafthq/draft" target="_blank" rel="noopener noreferrer">npm package</a></li>
+                    <li><a href="https://github.com/DeusData/codebase-memory-mcp" target="_blank" rel="noopener noreferrer">codebase-memory-mcp</a></li>
+                    <li><a href="../feed.xml">RSS feed</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 <a href="https://github.com/drafthq" target="_blank" rel="noopener noreferrer">DraftHQ</a> &middot; Open source under the <a href="https://github.com/drafthq/draft/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a> &middot; Created &amp; maintained by <a href="https://www.linkedin.com/in/mayurpise/" target="_blank" rel="noopener noreferrer">Mayur Pise</a></p>
+            <p class="footer-credit-sub">Graph engine: <a href="https://github.com/DeusData/codebase-memory-mcp" target="_blank" rel="noopener noreferrer">codebase-memory-mcp</a> by <a href="https://github.com/DeusData" target="_blank" rel="noopener noreferrer">DeusData</a> &mdash; tree-sitter + LSP, 159 languages, 100% local</p>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile nav toggle
+        const navToggle = document.getElementById('nav-toggle');
+        const topNav = document.getElementById('top-nav');
+        if (navToggle) {
+            navToggle.addEventListener('click', () => topNav.classList.toggle('open'));
+        }
+        // Scrolled nav style
+        window.addEventListener('scroll', () => {
+            topNav.classList.toggle('scrolled', window.scrollY > 20);
+        });
+        // Apply on load
+        if (window.scrollY > 20) topNav.classList.add('scrolled');
+    </script>
+    <script src="../js/main.js"></script>
+    <script src="../js/theme-toggle.js"></script>
+</body>
+</html>

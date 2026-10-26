@@ -1,0 +1,278 @@
+<h1 align="center">Draft</h1>
+
+<p align="center">
+  <strong>Stop shipping AI-generated bugs.</strong><br>
+  One command runs a three-stage review on your branch — validation, spec compliance, code quality — and writes the missing tests. Free. Open-source. MIT.
+</p>
+
+<p align="center">
+  <a href="https://github.com/drafthq/draft/releases"><img src="https://img.shields.io/github/v/release/drafthq/draft?include_prereleases&style=for-the-badge" alt="GitHub release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="MIT License"></a>
+  <a href="https://github.com/drafthq/draft/stargazers"><img src="https://img.shields.io/github/stars/drafthq/draft?style=for-the-badge" alt="Stars"></a>
+  <a href="https://github.com/DeusData/codebase-memory-mcp" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/graph_engine-codebase--memory--mcp-8A2BE2?style=for-the-badge" alt="Graph engine: codebase-memory-mcp"></a>
+</p>
+
+<p align="center">
+  Powered by <a href="https://github.com/DeusData/codebase-memory-mcp" target="_blank" rel="noopener noreferrer">codebase-memory-mcp</a> by <a href="https://github.com/DeusData" target="_blank" rel="noopener noreferrer">DeusData</a> — a 159-language, 100% local knowledge-graph engine.
+</p>
+
+<p align="center">
+  <a href="https://getdraft.dev">Website</a> ·
+  <a href="https://getdraft.dev#commands">Docs</a> ·
+  <a href="core/methodology.md">Methodology</a> ·
+  <a href="https://www.youtube.com/watch?v=gBSwFEFVd7Y">Watch (8 min)</a> ·
+  <a href="https://www.youtube.com/playlist?list=PLoN73NRJ_HQPdnR5Su4WkWK-O_7IOrOg_">All Videos</a>
+</p>
+
+---
+
+## The 60-second pitch
+
+Your AI assistant just wrote 200 lines. Some of them are bugs. Some don't match your patterns. Some skip tests.
+
+```bash
+/draft:review
+```
+
+Three stages, one command:
+
+1. **Validation** — runs your tests, lints, type-checks, and surfaces real failures
+2. **Spec compliance** — checks the diff against the agreed spec, not vibes
+3. **Code quality** — flags hotspots, blast radius, and missing test coverage using a tree-sitter knowledge graph of your repo
+
+No setup required for the first run: on an un-indexed repo it reviews the diff and names the structural checks it skipped, so you see findings before you spend anything.
+
+Free. No API keys. No paid tier. No vendor lock-in. Catches the 3 bugs you missed before they hit your reviewer.
+
+> *Demo coming soon — for now, [watch the 8-minute walkthrough](https://www.youtube.com/watch?v=gBSwFEFVd7Y).*
+
+---
+
+## Install (30 seconds)
+
+One command installs Draft into your agent. No clone, no config.
+
+```bash
+npx @drafthq/draft install <host>      # claude-code | cursor | codex | opencode
+```
+
+…or install the CLI once and reuse it:
+
+```bash
+npm install -g @drafthq/draft
+draft install <host>
+draft list                             # show every host + where it installs
+```
+
+Each host installs the way that host actually loads extensions — no manual steps after the command:
+
+| Host | `draft install …` | What it does |
+|------|-------------------|--------------|
+| **Claude Code** | `claude-code` | Registers the plugin via `claude plugin marketplace add` + `claude plugin install` (default `--global` / user scope). Restart Claude Code. |
+| **Cursor** | `cursor` | Default `--global`. Copies the plugin into `~/.cursor/plugins/local/draft/`, writes `.cursor-plugin/plugin.json`, registers `draft@draft-plugins` in Cursor's plugin registry, and enables it. Restart Cursor (or Developer: Reload Window). Existing installs upgrade with `draft install cursor --force`. |
+| **Codex** | `codex` | Default `--project`. Writes `./AGENTS.md`, which Codex reads automatically. |
+| **opencode** | `opencode` | Default `--project`. Writes `./AGENTS.md` + `~/.agents/skills/draft/`, both auto-discovered. |
+
+Flags: `--global` / `--project` to pick scope (`--global` is the default for `claude-code` and `cursor`; `--project` is the default for `codex` and `opencode`), `--dry-run` to preview, `--force` to overwrite, `--no-graph` to skip the graph-engine fetch.
+
+Then, in Claude Code (after restarting):
+
+```bash
+/draft:review     # ← start here. No setup, no indexing. Reviews your current diff.
+/draft:init       # once you've seen what it catches: index the repo (one-time)
+/draft:review     # same command, now with blast radius + hotspots + cycle detection
+```
+
+`/draft:review` runs on an un-indexed repo and tells you exactly which structural checks it had to skip. Indexing is the upgrade, not the entry fee.
+
+Run `/draft` for the full command map.
+
+<details>
+<summary><strong>Other ways to install →</strong></summary>
+
+### Claude Code — native marketplace
+
+```bash
+/plugin marketplace add drafthq/draft
+/plugin install draft
+```
+
+### Cursor — from GitHub
+
+Cursor requires `.cursor-plugin/plugin.json`; the `draft install cursor` command also registers the plugin via the shared Claude plugin registry that Cursor reads on many builds. To add from source instead, use *Settings > Rules, Skills, Subagents > Rules > New > Add from Github*:
+
+```text
+https://github.com/drafthq/draft.git
+```
+
+### GitHub Copilot
+
+Copilot reads a committed instructions file — copy it directly (not a `draft install` host):
+
+```bash
+mkdir -p .github && curl -o .github/copilot-instructions.md \
+  https://raw.githubusercontent.com/drafthq/draft/main/integrations/copilot/.github/copilot-instructions.md
+```
+
+### Gemini
+
+```bash
+curl -o .gemini.md https://raw.githubusercontent.com/drafthq/draft/main/integrations/gemini/.gemini.md
+```
+
+</details>
+
+---
+
+## The five commands
+
+| Command | What it does |
+|---------|--------------|
+| **`/draft:review`** | 3-stage review of your diff. **Works with zero setup** — run it first. |
+| **`/draft:init`** | Index the repo once. Adds blast radius, caller lookup, hotspot ranking, and cycle detection to every later review. |
+| **`/draft:new-track`** | Turn an idea into a spec + plan before any code is written. |
+| **`/draft:implement`** | Execute the plan task-by-task under TDD with verification gates. |
+| **`/draft:graph`** | Build the knowledge-graph index on its own (queries keep it fresh after that). |
+
+That is the whole loop. 28 more specialist commands — bug hunting, ACID audits, ADRs, tech debt, incident response, Jira, coverage, standups — sit behind five intent routers (`/draft:plan`, `/draft:discover`, `/draft:ops`, `/draft:docs`, `/draft:jira`).
+
+[Full command reference →](docs/COMMANDS.md) · run `/draft` for the interactive intent map
+
+---
+
+## Built-in Code Intelligence
+
+Draft is powered by a **local knowledge graph engine** ([codebase-memory-mcp](https://github.com/DeusData/codebase-memory-mcp)) that gives every command precise structural context — module boundaries, call graphs, dependencies, hotspots. It's 100% local (no API key, no SaaS), fetched during `draft install` (best-effort; `--no-graph` to skip), with first-use fetch as a fallback. The pinned engine release is SHA-256-checked against hashes recorded in this repo before it installs ([trust story](bin/README.md#trust-story)).
+
+```bash
+/draft:graph                                  # index the repo, write the gate marker
+scripts/tools/graph-impact.sh --file src/auth/login.go
+# → blast radius: every caller of the file's symbols (up to 3 hops) and every
+#   file that imports it, with downstream files, modules, and the code/test split
+```
+
+| Capability | What it provides |
+|---|---|
+| **Multi-language extraction** | Tree-sitter + LSP-grade resolution across 159 languages, 100% local |
+| **Call graph** | Callers of any symbol, with a fail-loud status that tells "no callers" apart from "unknown symbol", so review/bughunt never read a miss as a clean result |
+| **Impact analysis** | Everything that depends on a file or symbol through calls and imports, by hop, with downstream files, affected modules, and the code/test split — answers *"what breaks if I change this?"* |
+| **Cycle detection** | Flags circular call dependencies before they bite |
+| **Hotspot ranking** | Fan-in plus measured complexity, so high-risk symbols get extra scrutiny |
+| **Incremental indexing** | git-aware, content-based; every query refreshes the index first (~0.1 s when nothing changed), so answers include your uncommitted edits |
+| **Track impact memory** | `metadata.json.impact` snapshots each completed track's blast radius — `/draft:new-track` flags overlap with recent work |
+
+The graph powers `/draft:graph` and `/draft:impact`, enriches `/draft:bughunt` and `/draft:review`, and is consumed by skills via `core/shared/graph-query.md`. The engine is installed via [`scripts/fetch-memory-engine.sh`](scripts/fetch-memory-engine.sh); the deterministic shell helpers live under [`scripts/tools/`](scripts/tools/).
+
+### Deterministic helper tools
+
+Skills also call into **shell helpers** under `scripts/tools/` for mechanical work — git metadata, file classification, test-framework detection, hotspot ranking, freshness checks, ADR indexing, and live graph queries (`graph-callers.sh`, `graph-impact.sh`, `hotspot-rank.sh`, `cycle-detect.sh`, `mermaid-from-graph.sh`). All emit JSON or markdown and follow a uniform exit-code contract. Graph wrappers fail loud: shapeless `{}` (no `.rows` array) is `source:"unavailable"` with a non-zero exit, not a measured empty result.
+
+---
+
+## How It Works
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                        /draft:init                          │
+│    5-phase codebase analysis + signal detection + state     │
+│  architecture.md + .ai-context.md + .state/ (freshness,    │
+│                   signals, run memory)                      │
+└────────────────────────────┬────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      /draft:new-track                       │
+│            AI-guided spec.md + phased plan.md               │
+└────────────────────────────┬────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     /draft:implement                        │
+│              RED → GREEN → REFACTOR (repeat)                │
+└────────────────────────────┬────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      /draft:review                          │
+│        Three-stage review (validation + spec + quality)     │
+└─────────────────────────────────────────────────────────────┘
+
+         /draft:init refresh  ←── incremental: only re-analyze
+                                   files with changed hashes
+```
+
+### Context output modes (`/draft:init`)
+
+`/draft:init` packages your architecture context in one of two modes, selected
+automatically by repo size (override with `DRAFT_INIT_MODE`):
+
+- **`monolith`** (default for small repos, tiers 1–2) — a single
+  graph-primary `architecture.md` is the source of truth; `.ai-context.md` is
+  the token-optimized AI view derived from it.
+- **`okf`** (default for larger repos, tiers 3+) — an **OKF concept taxonomy**
+  under `draft/wiki/` is the source of truth (one concept per file, cross-links
+  form the graph), `.ai-context.md` becomes the navigable index root
+  (Synopsis + Concept Map), and `architecture.md` is demoted to a generated
+  rendered view. An optional self-contained offline HTML viewer ships under
+  `draft/wiki/web/`.
+
+Both modes produce the same `product.md`, `tech-stack.md`, `workflow.md`,
+`guardrails.md`, tracks, and `.state/` — only the architecture packaging differs.
+
+[Full workflow →](core/methodology.md#core-workflow)
+
+---
+
+## Why Draft?
+
+AI tools are fast but unstructured. Draft applies Context-Driven Development to impose clear boundaries: explicit context, phased execution, and built-in verification, ensuring outputs remain aligned, predictable, and production-ready.
+
+```text
+product.md       →  "Build a task manager"
+tech-stack.md    →  "React, TypeScript, Tailwind"
+architecture.md  →  Comprehensive: 10-section graph-primary engineering reference, Mermaid diagrams (source of truth). Mature brownfield projects with strong existing agent docs (CLAUDE.md, INVARIANTS.md, etc.) receive early Context Quality Audit, graph fidelity dashboard, and explicit Relationship + Gaps sections (no blind duplication).
+.ai-context.md   →  100-900 lines (scaled to repo size): condensed from architecture.md (token-optimized AI context)
+.state/          →  freshness hashes, signal classification, run memory (incremental refresh)
+spec.md          →  "Add drag-and-drop reordering"
+plan.md          →  "Phase 1: sortable, Phase 2: persist"
+```
+
+Each layer narrows the solution space. By the time AI writes code, decisions are made.
+
+**Incremental refresh**: After initial setup, `/draft:init refresh` uses stored file hashes and signal classification to only re-analyze what changed — no full re-scan needed.
+
+[Read methodology →](core/methodology.md#philosophy)
+
+---
+
+## Contributing
+
+### Source of Truth
+
+1. `core/methodology.md` — Master methodology
+2. `skills/<name>/SKILL.md` — Command implementations
+3. `integrations/` — Auto-generated (don't edit)
+
+### Update Workflow
+
+```bash
+# 1. Edit core/methodology.md or skills/*/SKILL.md
+# 2. Rebuild integrations
+./scripts/build-integrations.sh
+```
+
+[Full architecture →](CLAUDE.md)
+
+---
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=drafthq/draft&type=Date)](https://star-history.com/#drafthq/draft&Date)
+
+---
+
+<p align="center">MIT License &middot; Created &amp; maintained by <a href="https://www.linkedin.com/in/mayurpise/" target="_blank" rel="noopener noreferrer">Mayur Pise</a> &middot; Graph engine: <a href="https://github.com/DeusData/codebase-memory-mcp" target="_blank" rel="noopener noreferrer">codebase-memory-mcp</a> by <a href="https://github.com/DeusData" target="_blank" rel="noopener noreferrer">DeusData</a></p>
+
+<p align="center">
+  <strong>Credits:</strong> Inspired by <a href="https://github.com/gemini-cli-extensions/conductor">gemini-cli-extensions/conductor</a>
+</p>

@@ -1,0 +1,132 @@
+.PHONY: clean help test build build-integrations lint
+.DEFAULT_GOAL := help
+
+TEST_SCRIPTS = \
+	./tests/test-skill-frontmatter.sh \
+	./tests/test-canonical-namespace.sh \
+	./tests/test-web-claims.sh \
+	./tests/test-web-consistency.sh \
+	./tests/test-zero-setup-review.sh \
+	./tests/test-release-notes.sh \
+	./tests/test-fetch-memory-engine.sh \
+	./tests/test-benchmark-harness.sh \
+	./tests/test-skill-name-security.sh \
+	./tests/test-skill-order.sh \
+	./tests/test-skill-headers.sh \
+	./tests/test-skill-references.sh \
+	./tests/test-core-files.sh \
+	./tests/test-plugin-manifest.sh \
+	./tests/test-version-sync.sh \
+	./tests/test-build-integrations.sh \
+	./tests/test-cli.sh \
+	./tests/test-syntax-transforms.sh \
+	./tests/test-trigger-functions.sh \
+	./tests/test-error-handling.sh \
+	./tests/test-cross-references.sh \
+	./tests/test-hld-lld-contract.sh \
+	./tests/test-skill-script-invocation.sh \
+	./tests/test-tools-registered.sh \
+	./tests/test-tools-conventions.sh \
+	./tests/test-tools-git-metadata.sh \
+	./tests/test-tools-classify-files.sh \
+	./tests/test-tools-parse-git-log.sh \
+	./tests/test-tools-scan-markers.sh \
+	./tests/test-tools-hotspot-rank.sh \
+	./tests/test-tools-cycle-detect.sh \
+	./tests/test-tools-parse-reports.sh \
+	./tests/test-tools-detect-test-framework.sh \
+	./tests/test-tools-run-coverage.sh \
+	./tests/test-tools-freshness-check.sh \
+	./tests/test-tools-adr-index.sh \
+	./tests/test-tools-manage-symlinks.sh \
+	./tests/test-tools-mermaid-from-graph.sh \
+	./tests/test-tools-graph-snapshot.sh \
+	./tests/test-tools-mem-bound.sh \
+	./tests/test-tools-graph-init.sh \
+	./tests/test-tools-graph-preflight.sh \
+	./tests/test-tools-graph-impact.sh \
+	./tests/test-tools-graph-callers.sh \
+	./tests/test-tools-graph-arch.sh \
+	./tests/test-tools-graph-query.sh \
+	./tests/test-tools-graph-snippet.sh \
+	./tests/test-tools-graph-search.sh \
+	./tests/test-tools-graph-tests.sh \
+	./tests/test-tools-graph-deps.sh \
+	./tests/test-tools-graph-hierarchy.sh \
+	./tests/test-tools-graph-errors.sh \
+	./tests/test-tools-graph-risk.sh \
+	./tests/test-tools-graph-traces.sh \
+	./tests/test-tools-graph-labels.sh \
+	./tests/test-engine-smoke.sh \
+	./tests/test-tools-fix-whitespace.sh \
+	./tests/test-tools-validate-frontmatter.sh \
+	./tests/test-tools-check-scope-conflicts.sh \
+	./tests/test-tools-check-skill-line-caps.sh \
+	./tests/test-tools-check-track-hygiene.sh \
+	./tests/test-tools-diff-templates-vs-tracks.sh \
+	./tests/test-tools-migrate-track-frontmatter.sh \
+	./tests/test-tools-render-track.sh \
+	./tests/test-tools-verify-citations.sh \
+	./tests/test-tools-verify-doc-anchors.sh \
+	./tests/test-tools-verify-graph-binary.sh \
+	./tests/test-tools-resolve-tools.sh \
+	./tests/test-tools-okf-validate.sh \
+	./tests/test-tools-okf-render-views.sh \
+	./tests/test-tools-okf-plan-concepts.sh \
+	./tests/test-tools-okf-validate-quality.sh \
+	./tests/test-tools-okf-coverage-check.sh \
+	./tests/test-tools-okf-validate-all.sh \
+	./tests/test-tools-okf-plan-concepts-cargo.sh \
+	./tests/test-tools-okf-emit-catalog.sh \
+	./tests/test-tools-okf-fix-links.sh \
+	./tests/test-tools-check-repo-size.sh \
+	./tests/test-tools-install-smoke-test.sh \
+	./tests/test-tools-check-graph-usage-report.sh \
+	./tests/test-tools-check-template-noop.sh \
+	./tests/test-tools-emit-skill-metrics.sh \
+	./tests/test-package.sh
+
+# Phase 0 Foundations hygiene/verification tool tests (per manifest §2.2) — see above
+
+help: ## Show this help message
+	@echo "Available targets:"
+	@echo "  make test               - Run all tests"
+	@echo "  make build              - Build integrations (alias for build-integrations)"
+	@echo "  make build-integrations - Build Copilot instructions"
+	@echo "  make lint               - Run shellcheck + markdownlint"
+	@echo "  make clean              - Clean build artifacts"
+	@echo "  make help               - Show this message"
+
+test: ## Run all tests
+	@FAILED_SUITES=""; \
+	for script in $(TEST_SCRIPTS); do \
+		echo ""; \
+		if $$script; then \
+			: ; \
+		else \
+			FAILED_SUITES="$$FAILED_SUITES $$script"; \
+		fi; \
+	done; \
+	echo ""; \
+	echo "========================================"; \
+	if [ -z "$$FAILED_SUITES" ]; then \
+		echo "All test suites passed."; \
+	else \
+		echo "FAILED suites:$$FAILED_SUITES"; \
+		exit 1; \
+	fi
+
+build: build-integrations ## Build integrations (alias for build-integrations)
+
+build-integrations: ## Build Copilot copilot-instructions.md from skill sources
+	@./scripts/build-integrations.sh
+
+lint: ## Run shellcheck and markdownlint
+	@./scripts/lint.sh
+
+clean: ## Clean build artifacts
+	@rm -f integrations/copilot/.github/copilot-instructions.md
+	@rm -f integrations/copilot/.github/copilot-instructions.md.*
+	@rm -f integrations/agents/AGENTS.md
+	@rm -f integrations/agents/AGENTS.md.*
+	@echo "Cleaned integration build artifacts"

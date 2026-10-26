@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Draft Book — Context-Driven Development Deep Dive</title>
+    <meta name="description" content="A comprehensive guide to Draft's Context-Driven Development methodology by Mayur Pise. 22 chapters and 2 appendices covering specs, plans, TDD, code review, bug hunting, ACID audits, and more.">
+    <meta name="author" content="Mayur Pise">
+    <meta name="theme-color" content="#06080e">
+    <meta name="keywords" content="context-driven development book, ai coding methodology, claude code guide, spec driven development, ai code review, tdd enforcement, ai architecture discovery, bug hunting methodology, copilot best practices, ai development workflow">
+    <meta name="robots" content="index, follow">
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <meta property="og:title" content="The Draft Book — Context-Driven Development Deep Dive">
+    <meta property="og:description" content="22 chapters and 2 appendices covering Draft's methodology, features, and philosophy. From context tiering to 14-dimension bug hunting. By Mayur Pise.">
+    <meta property="og:type" content="book">
+    <meta property="og:url" content="https://getdraft.dev/book/">
+    <meta property="og:image" content="https://getdraft.dev/social-preview.png">
+    <meta property="og:image:alt" content="The Draft Book — Context-Driven Development Deep Dive">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="The Draft Book — Context-Driven Development Deep Dive">
+    <meta name="twitter:description" content="22 chapters and 2 appendices covering specs, plans, TDD enforcement, 3-stage code review, 14-dimension bug hunting, and ACID audits for AI coding agents. By Mayur Pise.">
+    <meta name="twitter:image" content="https://getdraft.dev/social-preview.png">
+    <meta name="twitter:image:alt" content="The Draft Book — Context-Driven Development Deep Dive">
+    <link rel="canonical" href="https://getdraft.dev/book/">
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Book",
+      "name": "The Draft Book",
+      "alternateName": "Context-Driven Development Deep Dive",
+      "description": "A comprehensive guide to Draft's Context-Driven Development methodology by Mayur Pise. 22 chapters and 2 appendices covering specs, plans, TDD, code review, bug hunting, ACID audits, and more.",
+      "url": "https://getdraft.dev/book/",
+      "author": {
+        "@type": "Person",
+        "name": "Mayur Pise",
+        "url": "https://www.linkedin.com/in/mayurpise/",
+        "sameAs": ["https://github.com/mayurpise"]
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Draft",
+        "url": "https://getdraft.dev"
+      },
+      "inLanguage": "en",
+      "genre": "Software Development",
+      "numberOfPages": 24,
+      "bookFormat": "https://schema.org/EBook",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD", "availability": "https://schema.org/InStock" },
+      "image": "https://getdraft.dev/social-preview.png"
+    }
+    </script>
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-F6X062B4B7"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'G-F6X062B4B7');
+    </script>
+
+    <!-- Redirect old hash-based URLs -->
+    <script>
+ (function() {
+ if (location.hash && location.hash.length > 1) {
+ var id = location.hash.slice(1);
+ var known = ["what-is-draft","the-problem","context-driven-development","getting-started","specs-and-plans","implementation","review-pipeline","managing-tracks","decomposition","adrs","context-tiering","agent-system","signal-classification","incremental-refresh","deep-review","bug-hunt","coverage","pattern-learning","monorepo-federation","jira-integration","multi-ide-support","philosophy-references","command-reference","file-reference"];
+ if (known.indexOf(id) !== -1) { location.replace(id + "/"); }
+ }
+ })();
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" as="style"
+        href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        onload="this.onload=null;this.rel='stylesheet'">
+    <noscript>
+        <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    </noscript>
+
+    <link rel="stylesheet" href="css/book.css">
+
+    <!-- Theme: apply early to prevent flash of wrong theme -->
+    <script>
+    (function(){try{if(localStorage.getItem('draft-theme')==='light')document.documentElement.removeAttribute('data-theme');}catch(e){}})();
+    </script>
+</head>
+<body>
+
+    <div class="reading-progress" id="reading-progress"></div>
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+    <header class="book-topbar">
+        <div class="book-topbar-left">
+            <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle sidebar">
+                <span></span><span></span><span></span>
+            </button>
+            <a href="https://getdraft.dev" class="book-topbar-logo">Draft <span>Book</span></a>
+        </div>
+        <div class="book-topbar-right">
+            <a href="https://getdraft.dev" class="book-topbar-link">Home</a>
+            <a href="https://github.com/drafthq/draft" target="_blank" rel="noopener noreferrer" class="topbar-github">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                GitHub
+            </a>
+        </div>
+    </header>
+
+    <div class="book-layout">
+ <aside class="book-sidebar" id="book-sidebar">
+ <div class="sidebar-search">
+ <svg class="sidebar-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+ <input type="text" id="sidebar-search-input" placeholder="Search chapters..." autocomplete="off">
+ </div>
+ <div class="sidebar-part">
+ <div class="sidebar-part-title">Introduction</div>
+ <ul class="sidebar-chapters">
+ <li><a href="./what-is-draft/" class="sidebar-chapter" data-chapter="what-is-draft">
+ <span class="ch-num">0.</span>What is Draft?
+ </a></li>
+ </ul>
+ </div>
+ <div class="sidebar-part">
+ <div class="sidebar-part-title">I. Foundation</div>
+ <ul class="sidebar-chapters">
+ <li><a href="./the-problem/" class="sidebar-chapter" data-chapter="the-problem">
+ <span class="ch-num">1.</span>The Problem
+ </a></li>
+ <li><a href="./context-driven-development/" class="sidebar-chapter" data-chapter="context-driven-development">
+ <span class="ch-num">2.</span>Context-Driven Development
+ </a></li>
+ <li><a href="./getting-started/" class="sidebar-chapter" data-chapter="getting-started">
+ <span class="ch-num">3.</span>Getting Started
+ </a></li>
+ </ul>
+ </div>
+ <div class="sidebar-part">
+ <div class="sidebar-part-title">II. Track Lifecycle</div>
+ <ul class="sidebar-chapters">
+ <li><a href="./specs-and-plans/" class="sidebar-chapter" data-chapter="specs-and-plans">
+ <span class="ch-num">4.</span>Specs &amp; Plans
+ </a></li>
+ <li><a href="./implementation/" class="sidebar-chapter" data-chapter="implementation">
+ <span class="ch-num">5.</span>Implementation
+ </a></li>
+ <li><a href="./review-pipeline/" class="sidebar-chapter" data-chapter="review-pipeline">
+ <span class="ch-num">6.</span>Review Pipeline
+ </a></li>
+ <li><a href="./managing-tracks/" class="sidebar-chapter" data-chapter="managing-tracks">
+ <span class="ch-num">7.</span>Managing Tracks
+ </a></li>
+ <li><a href="./decomposition/" class="sidebar-chapter" data-chapter="decomposition">
+ <span class="ch-num">8.</span>Decomposition
+ </a></li>
+ <li><a href="./adrs/" class="sidebar-chapter" data-chapter="adrs">
+ <span class="ch-num">9.</span>Architecture Decision Records
+ </a></li>
+ </ul>
+ </div>
+ <div class="sidebar-part">
+ <div class="sidebar-part-title">III. How Draft Thinks</div>
+ <ul class="sidebar-chapters">
+ <li><a href="./context-tiering/" class="sidebar-chapter" data-chapter="context-tiering">
+ <span class="ch-num">10.</span>Context Tiering
+ </a></li>
+ <li><a href="./agent-system/" class="sidebar-chapter" data-chapter="agent-system">
+ <span class="ch-num">11.</span>The Agent System
+ </a></li>
+ <li><a href="./signal-classification/" class="sidebar-chapter" data-chapter="signal-classification">
+ <span class="ch-num">12.</span>Signal Classification
+ </a></li>
+ <li><a href="./incremental-refresh/" class="sidebar-chapter" data-chapter="incremental-refresh">
+ <span class="ch-num">13.</span>Incremental Refresh
+ </a></li>
+ </ul>
+ </div>
+ <div class="sidebar-part">
+ <div class="sidebar-part-title">IV. Quality</div>
+ <ul class="sidebar-chapters">
+ <li><a href="./deep-review/" class="sidebar-chapter" data-chapter="deep-review">
+ <span class="ch-num">14.</span>Deep Review
+ </a></li>
+ <li><a href="./bug-hunt/" class="sidebar-chapter" data-chapter="bug-hunt">
+ <span class="ch-num">15.</span>Bug Hunt
+ </a></li>
+ <li><a href="./coverage/" class="sidebar-chapter" data-chapter="coverage">
+ <span class="ch-num">16.</span>Coverage
+ </a></li>
+ <li><a href="./pattern-learning/" class="sidebar-chapter" data-chapter="pattern-learning">
+ <span class="ch-num">17.</span>Pattern Learning
+ </a></li>
+ </ul>
+ </div>
+ <div class="sidebar-part">
+ <div class="sidebar-part-title">V. Enterprise</div>
+ <ul class="sidebar-chapters">
+ <li><a href="./monorepo-federation/" class="sidebar-chapter" data-chapter="monorepo-federation">
+ <span class="ch-num">18.</span>Monorepo Federation
+ </a></li>
+ <li><a href="./jira-integration/" class="sidebar-chapter" data-chapter="jira-integration">
+ <span class="ch-num">19.</span>Jira Integration
+ </a></li>
+ <li><a href="./multi-ide-support/" class="sidebar-chapter" data-chapter="multi-ide-support">
+ <span class="ch-num">20.</span>Multi-IDE Support
+ </a></li>
+ </ul>
+ </div>
+ <div class="sidebar-part">
+ <div class="sidebar-part-title">VI. Closing</div>
+ <ul class="sidebar-chapters">
+ <li><a href="./philosophy-references/" class="sidebar-chapter" data-chapter="philosophy-references">
+ <span class="ch-num">21.</span>Philosophy &amp; References
+ </a></li>
+ </ul>
+ </div>
+ <div class="sidebar-part">
+ <div class="sidebar-part-title">Appendix</div>
+ <ul class="sidebar-chapters">
+ <li><a href="./command-reference/" class="sidebar-chapter" data-chapter="command-reference">
+ <span class="ch-num">A.</span>Command Reference
+ </a></li>
+ <li><a href="./file-reference/" class="sidebar-chapter" data-chapter="file-reference">
+ <span class="ch-num">B.</span>File Reference
+ </a></li>
+ </ul>
+ </div>
+ </aside>
+
+        <main class="book-content">
+            <div class="chapter-wrapper">
+                <div class="book-landing book-landing--draft">
+                    <div class="book-grid-overlay" aria-hidden="true"></div>
+                    <div class="book-eyebrow">
+                        <span class="book-eyebrow-label">The Draft Book</span>
+                        <span class="book-rev">REV 5.0.3 · MIT</span>
+                    </div>
+                    <h1>Read the <span class="book-mark">draft</span><br>behind the method.</h1>
+                    <p class="book-landing-subtitle">Context-Driven Development, from first principles to enterprise deployment — specs and plans, TDD enforcement, three-stage review, 14-dimension bug hunting, and the knowledge-graph engine that maps your codebase underneath it all.</p>
+                    <p class="book-author">by <a href="https://www.linkedin.com/in/mayurpise/" target="_blank" rel="noopener noreferrer">Mayur Pise</a></p>
+                    <div class="book-titleblock">
+                        <div class="tb-cell"><span class="tb-key">Chapters</span><span class="tb-val">22</span></div>
+                        <div class="tb-cell"><span class="tb-key">Parts</span><span class="tb-val">6</span></div>
+                        <div class="tb-cell"><span class="tb-key">Appendices</span><span class="tb-val">2</span></div>
+                        <div class="tb-cell tb-cell--accent"><span class="tb-key">License</span><span class="tb-val">MIT</span></div>
+                    </div>
+                </div>
+
+                <div class="book-toc">
+ <div class="book-toc-part"><div class="book-toc-part-title">Introduction</div><ul class="book-toc-list">
+ <li><a href="what-is-draft/" class="book-toc-entry"><span class="book-toc-num">0.</span><span class="book-toc-name">What is Draft?</span></a></li>
+ </ul></div>
+ <div class="book-toc-part"><div class="book-toc-part-title">I. Foundation</div><ul class="book-toc-list">
+ <li><a href="the-problem/" class="book-toc-entry"><span class="book-toc-num">1.</span><span class="book-toc-name">The Problem</span></a></li>
+ <li><a href="context-driven-development/" class="book-toc-entry"><span class="book-toc-num">2.</span><span class="book-toc-name">Context-Driven Development</span></a></li>
+ <li><a href="getting-started/" class="book-toc-entry"><span class="book-toc-num">3.</span><span class="book-toc-name">Getting Started</span></a></li>
+ </ul></div>
+ <div class="book-toc-part"><div class="book-toc-part-title">II. Track Lifecycle</div><ul class="book-toc-list">
+ <li><a href="specs-and-plans/" class="book-toc-entry"><span class="book-toc-num">4.</span><span class="book-toc-name">Specs &amp; Plans</span></a></li>
+ <li><a href="implementation/" class="book-toc-entry"><span class="book-toc-num">5.</span><span class="book-toc-name">Implementation</span></a></li>
+ <li><a href="review-pipeline/" class="book-toc-entry"><span class="book-toc-num">6.</span><span class="book-toc-name">Review Pipeline</span></a></li>
+ <li><a href="managing-tracks/" class="book-toc-entry"><span class="book-toc-num">7.</span><span class="book-toc-name">Managing Tracks</span></a></li>
+ <li><a href="decomposition/" class="book-toc-entry"><span class="book-toc-num">8.</span><span class="book-toc-name">Decomposition</span></a></li>
+ <li><a href="adrs/" class="book-toc-entry"><span class="book-toc-num">9.</span><span class="book-toc-name">Architecture Decision Records</span></a></li>
+ </ul></div>
+ <div class="book-toc-part"><div class="book-toc-part-title">III. How Draft Thinks</div><ul class="book-toc-list">
+ <li><a href="context-tiering/" class="book-toc-entry"><span class="book-toc-num">10.</span><span class="book-toc-name">Context Tiering</span></a></li>
+ <li><a href="agent-system/" class="book-toc-entry"><span class="book-toc-num">11.</span><span class="book-toc-name">The Agent System</span></a></li>
+ <li><a href="signal-classification/" class="book-toc-entry"><span class="book-toc-num">12.</span><span class="book-toc-name">Signal Classification</span></a></li>
+ <li><a href="incremental-refresh/" class="book-toc-entry"><span class="book-toc-num">13.</span><span class="book-toc-name">Incremental Refresh</span></a></li>
+ </ul></div>
+ <div class="book-toc-part"><div class="book-toc-part-title">IV. Quality</div><ul class="book-toc-list">
+ <li><a href="deep-review/" class="book-toc-entry"><span class="book-toc-num">14.</span><span class="book-toc-name">Deep Review</span></a></li>
+ <li><a href="bug-hunt/" class="book-toc-entry"><span class="book-toc-num">15.</span><span class="book-toc-name">Bug Hunt</span></a></li>
+ <li><a href="coverage/" class="book-toc-entry"><span class="book-toc-num">16.</span><span class="book-toc-name">Coverage</span></a></li>
+ <li><a href="pattern-learning/" class="book-toc-entry"><span class="book-toc-num">17.</span><span class="book-toc-name">Pattern Learning</span></a></li>
+ </ul></div>
+ <div class="book-toc-part"><div class="book-toc-part-title">V. Enterprise</div><ul class="book-toc-list">
+ <li><a href="monorepo-federation/" class="book-toc-entry"><span class="book-toc-num">18.</span><span class="book-toc-name">Monorepo Federation</span></a></li>
+ <li><a href="jira-integration/" class="book-toc-entry"><span class="book-toc-num">19.</span><span class="book-toc-name">Jira Integration</span></a></li>
+ <li><a href="multi-ide-support/" class="book-toc-entry"><span class="book-toc-num">20.</span><span class="book-toc-name">Multi-IDE Support</span></a></li>
+ </ul></div>
+ <div class="book-toc-part"><div class="book-toc-part-title">VI. Closing</div><ul class="book-toc-list">
+ <li><a href="philosophy-references/" class="book-toc-entry"><span class="book-toc-num">21.</span><span class="book-toc-name">Philosophy &amp; References</span></a></li>
+ </ul></div>
+ <div class="book-toc-part"><div class="book-toc-part-title">Appendix</div><ul class="book-toc-list">
+ <li><a href="command-reference/" class="book-toc-entry"><span class="book-toc-num">A.</span><span class="book-toc-name">Command Reference</span></a></li>
+ <li><a href="file-reference/" class="book-toc-entry"><span class="book-toc-num">B.</span><span class="book-toc-name">File Reference</span></a></li>
+ </ul></div>
+                </div>
+
+                <div class="book-footer">
+                    <p>The Draft Book is written by <a href="https://www.linkedin.com/in/mayurpise/" target="_blank" rel="noopener noreferrer">Mayur Pise</a> as part of the <a href="https://getdraft.dev">Draft</a> project. <a href="https://github.com/drafthq/draft" target="_blank" rel="noopener noreferrer">View on GitHub</a>.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/book.js"></script>
+    <script src="../js/theme-toggle.js"></script>
+</body>
+</html>

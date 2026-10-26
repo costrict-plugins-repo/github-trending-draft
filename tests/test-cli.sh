@@ -1,0 +1,314 @@
+#!/usr/bin/env bash
+# Test suite for the npm `draft` CLI (cli/bin/draft.js).
+#
+# What this tests:
+# - --version / --help / list exit 0 and name all 4 hosts
+# - every host id and alias resolves; unknown host exits non-zero
+# - install --dry-run writes ZERO files and prints the planned target
+# - real installs land the expected artifact (codex AGENTS.md), and guard
+#   refuses to overwrite without --force
+#
+# What this does NOT test:
+# - the knowledge-graph engine fetch (network-gated; --no-graph used throughout)
+# - host-side discovery/activation (out of process)
+#
+# Usage: ./tests/test-cli.sh
+# Exit code: number of failed tests (0 = all pass)
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(dirname "$SCRIPT_DIR")"
+CLI="$ROOT_DIR/cli/bin/draft.js"
+
+source "$SCRIPT_DIR/test-helpers.sh"
+
+echo "=== draft CLI tests ==="
+echo ""
+
+# --- Prerequisites ---
+echo "## Prerequisites"
+assert "node is available" \
+    "$(command -v node >/dev/null 2>&1 && echo true || echo false)"
+assert "cli/bin/draft.js exists" \
+    "$([[ -f "$CLI" ]] && echo true || echo false)"
+assert "cli/bin/draft.js is executable" \
+    "$([[ -x "$CLI" ]] && echo true || echo false)"
+
+# --- Top-level commands ---
+echo ""
+echo "## Commands"
+VERSION_OUT="$(node "$CLI" --version 2>/dev/null || echo FAIL)"
+assert "--version prints package version" \
+    "$([[ "$VERSION_OUT" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]] && echo true || echo false)"
+
+if node "$CLI" --help >/dev/null 2>&1; then HELP_OK=true; else HELP_OK=false; fi
+assert "--help exits 0" "$HELP_OK"
+HELP_TEXT="$(node "$CLI" --help 2>/dev/null)"
+assert "--help says --global is default for claude-code" \
+    "$(echo "$HELP_TEXT" | grep -q 'default for claude-code, cursor' && echo true || echo false)"
+assert "--help says --project is default for codex, opencode" \
+    "$(echo "$HELP_TEXT" | grep -q 'default for codex, opencode' && echo true || echo false)"
+assert "hasBinary reports a missing CLI as absent" \
+    "$(node -e "const {hasBinary}=require('$ROOT_DIR/cli/src/installer'); process.exit(hasBinary('definitely-not-on-path-xyz')?1:0)" && echo true || echo false)"
+assert "graph fetch spawnSync sets a timeout" \
+    "$(grep -q 'timeout' "$ROOT_DIR/cli/src/lib/graph.js" && echo true || echo false)"
+
+LIST_OUT="$(node "$CLI" list 2>/dev/null)"
+for host in claude-code cursor codex opencode; do
+    assert "list names host '$host'" \
+        "$(echo "$LIST_OUT" | grep -q "$host" && echo true || echo false)"
+done
+
+# --- Host resolution ---
+echo ""
+echo "## Host resolution"
+# Aliases resolve (claude → claude-code); dry-run keeps it side-effect free.
+ALIAS_TMP="$(mktemp -d)"
+if ( cd "$ALIAS_TMP" && node "$CLI" install claude --dry-run >/dev/null 2>&1 ); then
+    ALIAS_OK=true
+else
+    ALIAS_OK=false
+fi
+assert "alias 'claude' resolves to a host (exit 0)" "$ALIAS_OK"
+rm -rf "$ALIAS_TMP"
+
+if node "$CLI" install nonexistent-host --dry-run >/dev/null 2>&1; then
+    assert "unknown host exits non-zero" "false"
+else
+    assert "unknown host exits non-zero" "true"
+fi
+
+# --- Dry-run writes nothing ---
+echo ""
+echo "## Dry run is side-effect free"
+DRY_TMP="$(mktemp -d)"
+DRY_HOME="$(mktemp -d)"
+( cd "$DRY_TMP" && HOME="$DRY_HOME" node "$CLI" install codex --dry-run >/dev/null 2>&1 )
+DRY_FILES=$(find "$DRY_TMP" "$DRY_HOME" -type f | wc -l | tr -d ' ')
+assert "codex --dry-run writes zero files" \
+    "$([[ "$DRY_FILES" -eq 0 ]] && echo true || echo false)"
+DRY_PLAN="$( cd "$DRY_TMP" && node "$CLI" install codex --dry-run 2>/dev/null )"
+assert "codex --dry-run names AGENTS.md" \
+    "$(echo "$DRY_PLAN" | grep -q 'AGENTS.md' && echo true || echo false)"
+rm -rf "$DRY_TMP" "$DRY_HOME"
+
+# --- Real codex install + guard ---
+echo ""
+echo "## codex install + overwrite guard"
+CDX_TMP="$(mktemp -d)"
+( cd "$CDX_TMP" && node "$CLI" install codex --no-graph >/dev/null 2>&1 )
+assert "codex install writes AGENTS.md" \
+    "$([[ -f "$CDX_TMP/AGENTS.md" ]] && echo true || echo false)"
+assert "AGENTS.md is non-trivial (>100 lines)" \
+    "$([[ "$(wc -l < "$CDX_TMP/AGENTS.md" | tr -d ' ')" -gt 100 ]] && echo true || echo false)"
+if ( cd "$CDX_TMP" && node "$CLI" install codex --no-graph >/dev/null 2>&1 ); then
+    assert "re-install without --force is refused (exit non-zero)" "false"
+else
+    assert "re-install without --force is refused (exit non-zero)" "true"
+fi
+if ( cd "$CDX_TMP" && node "$CLI" install codex --no-graph --force >/dev/null 2>&1 ); then
+    FORCE_OK=true
+else
+    FORCE_OK=false
+fi
+assert "re-install with --force succeeds (exit 0)" "$FORCE_OK"
+rm -rf "$CDX_TMP"
+
+# --- cursor install copies the tree AND registers/enables the plugin ---
+echo ""
+echo "## cursor install (files + registry)"
+CUR_HOME="$(mktemp -d)"
+CUR_CWD="$(mktemp -d)"
+
+# Seed another plugin to verify non-destructive merge.
+mkdir -p "$CUR_HOME/.claude/plugins"
+cat > "$CUR_HOME/.claude/plugins/installed_plugins.json" <<'EOF'
+{
+  "version": 2,
+  "plugins": {
+    "other@other": [
+      {
+        "scope": "user",
+        "installPath": "/tmp/other",
+        "version": "1.0.0",
+        "installedAt": "2020-01-01T00:00:00.000Z",
+        "lastUpdated": "2020-01-01T00:00:00.000Z"
+      }
+    ]
+  }
+}
+EOF
+cat > "$CUR_HOME/.claude/settings.json" <<'EOF'
+{
+  "enabledPlugins": { "other@other": true },
+  "hooks": { "SessionStart": [] }
+}
+EOF
+
+( cd "$CUR_CWD" && HOME="$CUR_HOME" node "$CLI" install cursor --no-graph >/dev/null 2>&1 )
+
+INSTALL_ROOT="$CUR_HOME/.cursor/plugins/local/draft"
+
+assert "cursor install writes .cursor-plugin/plugin.json" \
+    "$([[ -f "$INSTALL_ROOT/.cursor-plugin/plugin.json" ]] && echo true || echo false)"
+assert "cursor install writes .claude-plugin/plugin.json" \
+    "$([[ -f "$INSTALL_ROOT/.claude-plugin/plugin.json" ]] && echo true || echo false)"
+assert "cursor install writes skills/draft" \
+    "$([[ -d "$INSTALL_ROOT/skills/draft" ]] && echo true || echo false)"
+assert "cursor install registers draft@draft-plugins" \
+    "$(grep -q '"draft@draft-plugins"' "$CUR_HOME/.claude/plugins/installed_plugins.json" && echo true || echo false)"
+assert "cursor install registers marketplace draft-plugins" \
+    "$(grep -q '"draft-plugins"' "$CUR_HOME/.claude/plugins/known_marketplaces.json" && echo true || echo false)"
+assert "cursor install preserves other plugins" \
+    "$(grep -q '"other@other"' "$CUR_HOME/.claude/plugins/installed_plugins.json" && echo true || echo false)"
+assert "cursor install enables draft@draft-plugins" \
+    "$(grep -q '"draft@draft-plugins": true' "$CUR_HOME/.claude/settings.json" && echo true || echo false)"
+assert "cursor install preserves settings hooks" \
+    "$(grep -q '"hooks"' "$CUR_HOME/.claude/settings.json" && echo true || echo false)"
+assert "cursor install preserves other enabledPlugins" \
+    "$(grep -q '"other@other": true' "$CUR_HOME/.claude/settings.json" && echo true || echo false)"
+
+# Re-install without --force is refused (guard on .cursor-plugin).
+if ( cd "$CUR_CWD" && HOME="$CUR_HOME" node "$CLI" install cursor --no-graph >/dev/null 2>&1 ); then
+    assert "cursor re-install without --force is refused" "false"
+else
+    assert "cursor re-install without --force is refused" "true"
+fi
+
+rm -rf "$CUR_HOME" "$CUR_CWD"
+
+# Dry-run names the registry files and writes zero files.
+echo ""
+echo "## cursor --dry-run is side-effect free"
+CUR_DRY_HOME="$(mktemp -d)"
+CUR_DRY_CWD="$(mktemp -d)"
+CUR_DRY_PLAN="$( cd "$CUR_DRY_CWD" && HOME="$CUR_DRY_HOME" node "$CLI" install cursor --dry-run --no-graph 2>&1 )"
+assert "cursor --dry-run mentions installed_plugins.json" \
+    "$(echo "$CUR_DRY_PLAN" | grep -q 'installed_plugins.json' && echo true || echo false)"
+CUR_DRY_FILES=$(find "$CUR_DRY_HOME" "$CUR_DRY_CWD" -type f | wc -l | tr -d ' ')
+assert "cursor --dry-run writes zero files" \
+    "$([[ "$CUR_DRY_FILES" -eq 0 ]] && echo true || echo false)"
+rm -rf "$CUR_DRY_HOME" "$CUR_DRY_CWD"
+
+# Array-shaped registry maps must be replaced, not written as named keys on [].
+echo ""
+echo "## cursor install repairs array-shaped registry maps"
+CUR_ARR_HOME="$(mktemp -d)"
+CUR_ARR_CWD="$(mktemp -d)"
+mkdir -p "$CUR_ARR_HOME/.claude/plugins"
+printf '{"version":2,"plugins":[]}\n' > "$CUR_ARR_HOME/.claude/plugins/installed_plugins.json"
+printf '{"enabledPlugins":[]}\n' > "$CUR_ARR_HOME/.claude/settings.json"
+( cd "$CUR_ARR_CWD" && HOME="$CUR_ARR_HOME" node "$CLI" install cursor --no-graph >/dev/null 2>&1 )
+assert "array plugins map is replaced and draft is registered" \
+    "$(node -e "const j=require('$CUR_ARR_HOME/.claude/plugins/installed_plugins.json'); process.exit(j.plugins && !Array.isArray(j.plugins) && j.plugins['draft@draft-plugins'] ? 0 : 1)" && echo true || echo false)"
+assert "array enabledPlugins is replaced and draft is enabled" \
+    "$(node -e "const j=require('$CUR_ARR_HOME/.claude/settings.json'); process.exit(j.enabledPlugins && !Array.isArray(j.enabledPlugins) && j.enabledPlugins['draft@draft-plugins']===true ? 0 : 1)" && echo true || echo false)"
+rm -rf "$CUR_ARR_HOME" "$CUR_ARR_CWD"
+
+echo ""
+echo "## opencode --dry-run"
+OC_DRY_HOME="$(mktemp -d)"
+OC_DRY_CWD="$(mktemp -d)"
+OC_DRY_PLAN="$( cd "$OC_DRY_CWD" && HOME="$OC_DRY_HOME" node "$CLI" install opencode --dry-run --no-graph 2>&1 )"
+assert "opencode --dry-run names AGENTS.md" \
+    "$(echo "$OC_DRY_PLAN" | grep -q 'AGENTS.md' && echo true || echo false)"
+assert "opencode --dry-run names skills dest" \
+    "$(echo "$OC_DRY_PLAN" | grep -q '.agents/skills/draft' && echo true || echo false)"
+OC_DRY_FILES=$(find "$OC_DRY_HOME" "$OC_DRY_CWD" -type f | wc -l | tr -d ' ')
+assert "opencode --dry-run writes zero files" \
+    "$([[ "$OC_DRY_FILES" -eq 0 ]] && echo true || echo false)"
+rm -rf "$OC_DRY_HOME" "$OC_DRY_CWD"
+
+# --- claude-code install drives the `claude plugin` CLI (no file copy) ---
+echo ""
+echo "## claude-code install (plugin registry)"
+CC_TMP="$(mktemp -d)"
+CC_PLAN="$( cd "$CC_TMP" && node "$CLI" install claude-code --dry-run 2>&1 )"
+assert "claude-code --dry-run runs 'claude plugin marketplace add'" \
+    "$(echo "$CC_PLAN" | grep -q 'claude plugin marketplace add drafthq/draft' && echo true || echo false)"
+assert "claude-code --dry-run runs 'claude plugin install draft@draft-plugins'" \
+    "$(echo "$CC_PLAN" | grep -q 'claude plugin install draft@draft-plugins' && echo true || echo false)"
+assert "claude-code --dry-run writes no files to cwd" \
+    "$([[ "$(find "$CC_TMP" -type f | wc -l | tr -d ' ')" -eq 0 ]] && echo true || echo false)"
+rm -rf "$CC_TMP"
+
+# --- Missing `claude` CLI: loud failure, not a silent no-op ---
+echo ""
+echo "## claude-code install when the claude CLI is absent"
+NODE_BIN="$(command -v node)"
+MISS_TMP="$(mktemp -d)"; MISS_HOME="$(mktemp -d)"
+# Empty PATH so spawnSync('claude') hits ENOENT; node runs via its absolute path.
+if ( cd "$MISS_TMP" && PATH="/nonexistent" HOME="$MISS_HOME" "$NODE_BIN" "$CLI" install claude-code --no-graph >/dev/null 2>&1 ); then
+    assert "missing claude CLI exits non-zero" "false"
+else
+    assert "missing claude CLI exits non-zero" "true"
+fi
+MISS_OUT="$( cd "$MISS_TMP" && PATH="/nonexistent" HOME="$MISS_HOME" "$NODE_BIN" "$CLI" install claude-code --no-graph 2>&1 || true )"
+assert "missing claude CLI says nothing was installed" \
+    "$(echo "$MISS_OUT" | grep -qi 'nothing was installed' && echo true || echo false)"
+assert "missing claude CLI prints the /plugin fallback" \
+    "$(echo "$MISS_OUT" | grep -q '/plugin marketplace add drafthq/draft' && echo true || echo false)"
+rm -rf "$MISS_TMP" "$MISS_HOME"
+
+# --- Stale `claude` CLI (no `plugin` subcommand): step fails with an upgrade hint ---
+echo ""
+echo "## claude-code install when the claude CLI is too old"
+STALE_DIR="$(mktemp -d)"; STALE_TMP="$(mktemp -d)"; STALE_HOME="$(mktemp -d)"
+# Fake claude: answers --version (so the binary check passes) but errors on any
+# subcommand (so `claude plugin marketplace add` fails like an old CLI would).
+cat > "$STALE_DIR/claude" <<'FAKE'
+#!/usr/bin/env bash
+if [ "$1" = "--version" ]; then echo "1.0.0 (fake)"; exit 0; fi
+echo "error: unknown command '$1'" >&2; exit 1
+FAKE
+chmod +x "$STALE_DIR/claude"
+if ( cd "$STALE_TMP" && PATH="$STALE_DIR:$PATH" HOME="$STALE_HOME" "$NODE_BIN" "$CLI" install claude-code --no-graph >/dev/null 2>&1 ); then
+    assert "stale claude CLI exits non-zero" "false"
+else
+    assert "stale claude CLI exits non-zero" "true"
+fi
+STALE_OUT="$( cd "$STALE_TMP" && PATH="$STALE_DIR:$PATH" HOME="$STALE_HOME" "$NODE_BIN" "$CLI" install claude-code --no-graph 2>&1 || true )"
+assert "stale claude CLI hints to update Claude Code" \
+    "$(echo "$STALE_OUT" | grep -qi 'claude update\|too old' && echo true || echo false)"
+assert "stale claude CLI prints the /plugin fallback" \
+    "$(echo "$STALE_OUT" | grep -q '/plugin marketplace add drafthq/draft' && echo true || echo false)"
+rm -rf "$STALE_DIR" "$STALE_TMP" "$STALE_HOME"
+
+# --- Old installer is gone ---
+echo ""
+echo "## Legacy installer removed"
+assert "scripts/install.sh no longer exists" \
+    "$([[ ! -f "$ROOT_DIR/scripts/install.sh" ]] && echo true || echo false)"
+
+# --- writeFile actions (no `src`) must not trip the copyFile/copyTree preflight ---
+# Regression for a latent bug: fsx.exists(act.src) with act.src undefined threw,
+# was swallowed, and reported "Bundled asset missing: undefined". No shipped host
+# emits a writeFile action today, so this exercises the installer core directly.
+echo ""
+echo "## writeFile action preflight (src-less actions)"
+WF_TMP="$(mktemp -d)"
+WF_HOME="$(mktemp -d)"
+WF_OUT="$( cd "$WF_TMP" && HOME="$WF_HOME" node -e "
+const { install } = require('$ROOT_DIR/cli/src/installer');
+const host = {
+  id: 'test-writefile',
+  label: 'Test writeFile host',
+  plan: () => ({
+    targetSummary: 'test',
+    actions: [{ kind: 'writeFile', dest: 'out.txt', content: 'hi' }],
+  }),
+};
+const ctx = { dryRun: true, force: false, home: process.env.HOME, cwd: process.cwd(), env: process.env, scope: 'project' };
+process.exit(install(host, ctx));
+" 2>&1 )"
+WF_STATUS=$?
+assert "writeFile action passes preflight (exit 0)" \
+    "$([[ "$WF_STATUS" -eq 0 ]] && echo true || echo false)"
+assert "writeFile action does not report a missing bundled asset" \
+    "$(echo "$WF_OUT" | grep -q 'Bundled asset missing' && echo false || echo true)"
+rm -rf "$WF_TMP" "$WF_HOME"
+
+# --- Summary ---
+echo ""
+echo "=== Results: $PASS passed, $FAIL failed ==="
+exit "$FAIL"

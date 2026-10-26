@@ -1,0 +1,191 @@
+<div class="chapter-wrapper">
+    <h1>Architecture Decision Records</h1>
+    <p class="chapter-meta"><span class="part-name">Part II: Track Lifecycle</span> &middot; Chapter 9</p>
+    <p class="read-time">3 min read</p>
+
+    <p class="chapter-intro">Code captures what you built. Tests capture what it should do. But neither captures why you built it that way. Why PostgreSQL instead of MongoDB? Why event-driven instead of synchronous? Why this pattern over that one? These decisions have context that evaporates the moment the conversation ends. Architecture Decision Records preserve it.</p>
+
+    <div class="figure">
+        <div class="figure-content">
+            <svg viewBox="0 0 560 200" xmlns="http://www.w3.org/2000/svg" width="100%" style="max-width:560px;display:block;margin:0 auto">
+                <defs>
+                    <filter id="adr-shadow" x="-4%" y="-4%" width="108%" height="112%">
+                        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#1a1a2e" flood-opacity="0.08"/>
+                    </filter>
+                    <marker id="adr-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#718096"/>
+                    </marker>
+                </defs>
+                <!-- Proposed -->
+                <rect x="20" y="50" width="130" height="48" rx="8" fill="#d97706" filter="url(#adr-shadow)"/>
+                <text x="85" y="79" text-anchor="middle" fill="#fff" font-family="Arial,sans-serif" font-size="14" font-weight="bold">Proposed</text>
+                <!-- Arrow Proposed -> Accepted -->
+                <line x1="150" y1="74" x2="210" y2="74" stroke="#718096" stroke-width="2" marker-end="url(#adr-arrow)"/>
+                <text x="180" y="64" text-anchor="middle" fill="#718096" font-family="Arial,sans-serif" font-size="10">Review</text>
+                <!-- Accepted -->
+                <rect x="215" y="50" width="130" height="48" rx="8" fill="#059669" filter="url(#adr-shadow)"/>
+                <text x="280" y="79" text-anchor="middle" fill="#fff" font-family="Arial,sans-serif" font-size="14" font-weight="bold">Accepted</text>
+                <!-- Arrow Accepted -> Deprecated -->
+                <line x1="345" y1="60" x2="405" y2="40" stroke="#718096" stroke-width="2" marker-end="url(#adr-arrow)"/>
+                <text x="390" y="38" text-anchor="middle" fill="#718096" font-family="Arial,sans-serif" font-size="10">Context changed</text>
+                <!-- Arrow Accepted -> Superseded -->
+                <line x1="345" y1="88" x2="405" y2="120" stroke="#718096" stroke-width="2" marker-end="url(#adr-arrow)"/>
+                <text x="385" y="116" text-anchor="middle" fill="#718096" font-family="Arial,sans-serif" font-size="10">New decision</text>
+                <!-- Deprecated -->
+                <rect x="410" y="16" width="130" height="44" rx="8" fill="#718096" filter="url(#adr-shadow)"/>
+                <text x="475" y="43" text-anchor="middle" fill="#fff" font-family="Arial,sans-serif" font-size="13" font-weight="bold">Deprecated</text>
+                <!-- Superseded -->
+                <rect x="410" y="104" width="130" height="44" rx="8" fill="#7c3aed" filter="url(#adr-shadow)"/>
+                <text x="475" y="131" text-anchor="middle" fill="#fff" font-family="Arial,sans-serif" font-size="13" font-weight="bold">Superseded</text>
+                <!-- Superseded link -->
+                <text x="475" y="166" text-anchor="middle" fill="#7c3aed" font-family="Arial,sans-serif" font-size="11" font-style="italic">links to ADR-xxx</text>
+            </svg>
+        </div>
+        <div class="figure-caption">ADR lifecycle: decisions move from Proposed through Accepted, and eventually to Deprecated (context changed) or Superseded (replaced by a newer ADR).</div>
+    </div>
+
+    <h2>Why ADRs Matter</h2>
+    <p>Every project accumulates decisions. Some are deliberate: the team evaluated three message brokers and chose RabbitMQ. Some are accidental: someone picked a library in a rush and it stuck. Without documentation, both look the same six months later &mdash; unexplained choices baked into the codebase.</p>
+
+    <p>ADRs solve this by capturing the decision, the context that drove it, the alternatives that were rejected, and the consequences of the choice. When a new team member asks "why don't we use GraphQL?", the answer is not a Slack archaeology expedition &mdash; it is ADR-003, which documents that REST was chosen because the client team needed cacheable endpoints and the read patterns were simple enough not to justify the schema overhead.</p>
+
+    <h2>The /draft:adr Command</h2>
+    <p>Draft's <code>/draft:adr</code> command creates and manages ADRs as markdown files in <code>draft/adrs/</code>. It supports four modes:</p>
+
+    <table>
+        <thead>
+            <tr><th>Usage</th><th>Behavior</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><code>/draft:adr</code></td><td>Interactive mode &mdash; asks about the decision context</td></tr>
+            <tr><td><code>/draft:adr "decision title"</code></td><td>Creates an ADR with the given title</td></tr>
+            <tr><td><code>/draft:adr list</code></td><td>Lists all existing ADRs with status and date</td></tr>
+            <tr><td><code>/draft:adr supersede &lt;number&gt;</code></td><td>Marks an ADR as superseded and links to its replacement</td></tr>
+        </tbody>
+    </table>
+
+    <p>Each ADR is saved as <code>draft/adrs/&lt;number&gt;-&lt;kebab-case-title&gt;.md</code> with auto-incremented, zero-padded numbers (001, 002, 003).</p>
+
+    <h2>ADR Structure</h2>
+    <p>Every ADR follows a consistent structure designed to capture the full decision context:</p>
+
+    <ul>
+        <li><strong>Title and Number</strong> &mdash; <code>ADR-003: Use RabbitMQ for async messaging</code></li>
+        <li><strong>Status</strong> &mdash; Current lifecycle state (Proposed, Accepted, Deprecated, Superseded)</li>
+        <li><strong>Context</strong> &mdash; What forces are driving this decision? Technical constraints, business requirements, organizational factors</li>
+        <li><strong>Decision</strong> &mdash; The actual decision, stated in active voice: "We will use RabbitMQ for all asynchronous message passing between services"</li>
+        <li><strong>Alternatives Considered</strong> &mdash; Each alternative with explicit pros, cons, and the specific reason it was rejected</li>
+        <li><strong>Consequences</strong> &mdash; Positive outcomes, negative trade-offs, and risks with mitigations</li>
+        <li><strong>References</strong> &mdash; Links to related discussions, RFCs, documentation, and other ADRs</li>
+    </ul>
+
+    <p>The Consequences section is the most valuable part. Decisions without documented consequences are just announcements. Consequences force the author to think through the second-order effects: "We gain message durability, but we add an infrastructure dependency that requires ops knowledge to maintain."</p>
+
+    <div class="figure">
+        <div class="figure-content">
+            <svg viewBox="0 0 520 380" xmlns="http://www.w3.org/2000/svg" width="100%" style="max-width:520px;display:block;margin:0 auto">
+                <defs>
+                    <filter id="adr-card-shadow" x="-4%" y="-4%" width="108%" height="112%">
+                        <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#1a1a2e" flood-opacity="0.10"/>
+                    </filter>
+                </defs>
+                <!-- Card background -->
+                <rect x="60" y="10" width="400" height="360" rx="12" fill="#f8f9fa" stroke="#e2e8f0" stroke-width="1.5" filter="url(#adr-card-shadow)"/>
+                <!-- Card header bar -->
+                <rect x="60" y="10" width="400" height="50" rx="12" fill="#2563eb"/>
+                <rect x="60" y="36" width="400" height="24" fill="#2563eb"/>
+                <!-- Title -->
+                <text x="80" y="42" fill="#fff" font-family="Arial,sans-serif" font-size="14" font-weight="bold">ADR-003: Use RabbitMQ for async messaging</text>
+                <!-- Status badge -->
+                <rect x="370" y="68" width="78" height="24" rx="12" fill="#059669"/>
+                <text x="409" y="84" text-anchor="middle" fill="#fff" font-family="Arial,sans-serif" font-size="11" font-weight="bold">Accepted</text>
+                <!-- Section: Context -->
+                <rect x="80" y="72" width="16" height="16" rx="3" fill="#e2e8f0"/>
+                <text x="80" y="84" fill="#2563eb" font-family="Arial,sans-serif" font-size="11" font-weight="bold">&#9679;</text>
+                <text x="104" y="84" fill="#1a1a2e" font-family="Arial,sans-serif" font-size="13" font-weight="bold">Context</text>
+                <text x="104" y="100" fill="#718096" font-family="Arial,sans-serif" font-size="11">Forces driving the decision: constraints, requirements...</text>
+                <!-- Divider -->
+                <line x1="80" y1="112" x2="440" y2="112" stroke="#e2e8f0" stroke-width="1"/>
+                <!-- Section: Decision -->
+                <rect x="80" y="120" width="16" height="16" rx="3" fill="#e2e8f0"/>
+                <text x="80" y="132" fill="#2563eb" font-family="Arial,sans-serif" font-size="11" font-weight="bold">&#9679;</text>
+                <text x="104" y="132" fill="#1a1a2e" font-family="Arial,sans-serif" font-size="13" font-weight="bold">Decision</text>
+                <text x="104" y="148" fill="#718096" font-family="Arial,sans-serif" font-size="11">"We will use RabbitMQ for all async message passing"</text>
+                <!-- Divider -->
+                <line x1="80" y1="160" x2="440" y2="160" stroke="#e2e8f0" stroke-width="1"/>
+                <!-- Section: Alternatives -->
+                <rect x="80" y="168" width="16" height="16" rx="3" fill="#e2e8f0"/>
+                <text x="80" y="180" fill="#2563eb" font-family="Arial,sans-serif" font-size="11" font-weight="bold">&#9679;</text>
+                <text x="104" y="180" fill="#1a1a2e" font-family="Arial,sans-serif" font-size="13" font-weight="bold">Alternatives Considered</text>
+                <text x="104" y="196" fill="#718096" font-family="Arial,sans-serif" font-size="11">Kafka (rejected: overkill), SQS (rejected: vendor lock)...</text>
+                <!-- Divider -->
+                <line x1="80" y1="208" x2="440" y2="208" stroke="#e2e8f0" stroke-width="1"/>
+                <!-- Section: Consequences (highlighted) -->
+                <rect x="74" y="214" width="372" height="76" rx="8" fill="#ecfdf5" stroke="#059669" stroke-width="1.5"/>
+                <text x="90" y="234" fill="#059669" font-family="Arial,sans-serif" font-size="13" font-weight="bold">Consequences</text>
+                <text x="274" y="234" fill="#059669" font-family="Arial,sans-serif" font-size="10" font-style="italic">&#9733; most valuable section</text>
+                <text x="90" y="252" fill="#065f46" font-family="Arial,sans-serif" font-size="11">+ Message durability and retry semantics</text>
+                <text x="90" y="268" fill="#065f46" font-family="Arial,sans-serif" font-size="11">+ Protocol-level routing and fanout</text>
+                <text x="90" y="284" fill="#991b1b" font-family="Arial,sans-serif" font-size="11">- Infrastructure dependency requiring ops knowledge</text>
+                <!-- Divider -->
+                <line x1="80" y1="298" x2="440" y2="298" stroke="#e2e8f0" stroke-width="1"/>
+                <!-- Section: References -->
+                <rect x="80" y="306" width="16" height="16" rx="3" fill="#e2e8f0"/>
+                <text x="80" y="318" fill="#2563eb" font-family="Arial,sans-serif" font-size="11" font-weight="bold">&#9679;</text>
+                <text x="104" y="318" fill="#1a1a2e" font-family="Arial,sans-serif" font-size="13" font-weight="bold">References</text>
+                <text x="104" y="336" fill="#718096" font-family="Arial,sans-serif" font-size="11">Related ADRs, RFCs, team discussion links...</text>
+                <!-- File path -->
+                <text x="260" y="362" text-anchor="middle" fill="#a0aec0" font-family="Arial,sans-serif" font-size="10" font-style="italic">draft/adrs/003-use-rabbitmq-for-async-messaging.md</text>
+            </svg>
+        </div>
+        <div class="figure-caption">Anatomy of an ADR: a structured document capturing the decision, its context, rejected alternatives, and consequences. The Consequences section (highlighted) is the most valuable part, forcing explicit trade-off documentation.</div>
+    </div>
+
+    <h2>The ADR Lifecycle</h2>
+    <p>ADRs move through a defined lifecycle:</p>
+
+    <pre><code>Proposed  &rarr;  Accepted  &rarr;  Deprecated
+                        &rarr;  Superseded by ADR-xxx</code></pre>
+
+    <ul>
+        <li><strong>Proposed</strong> &mdash; The decision is documented and awaiting review. This is the initial state for every new ADR.</li>
+        <li><strong>Accepted</strong> &mdash; The decision has been approved and is in effect. The team is expected to follow it.</li>
+        <li><strong>Deprecated</strong> &mdash; The decision is no longer relevant because the context has changed. The original reasoning is preserved for historical reference.</li>
+        <li><strong>Superseded</strong> &mdash; A newer decision has replaced this one. The old ADR links to the new one, and the new ADR links back, creating a traceable chain of evolving decisions.</li>
+    </ul>
+
+    <h2>When to Create an ADR</h2>
+    <p>Not every decision warrants an ADR. Variable naming and code formatting do not. The threshold is: would a new team member reasonably ask "why?" and would the answer require more than one sentence?</p>
+
+    <p>Good candidates for ADRs:</p>
+    <ul>
+        <li><strong>Technology choices</strong> &mdash; Selecting a database, message broker, framework, or library</li>
+        <li><strong>Pattern decisions</strong> &mdash; Choosing CQRS over simple CRUD, event sourcing over state mutation, REST over GraphQL</li>
+        <li><strong>Trade-off resolutions</strong> &mdash; Accepting eventual consistency for performance, choosing simplicity over extensibility</li>
+        <li><strong>Architectural boundaries</strong> &mdash; Defining module ownership, API contracts between services, data flow directions</li>
+        <li><strong>Security decisions</strong> &mdash; Authentication strategy, encryption approach, secret management</li>
+    </ul>
+
+    <h2>ADR Evaluation</h2>
+    <p>ADRs are not write-once documents. As the codebase evolves, decisions may drift from implementation. <code>/draft:adr</code> supports evaluation mode to check whether existing code still aligns with recorded decisions, surfacing violations and drift before they become systemic.</p>
+
+    <div class="callout callout-example">
+        <div class="callout-title">Evaluating Code Against ADR Decisions</div>
+        <p>Running <code>/draft:adr evaluate</code> scans the codebase for patterns that contradict accepted ADRs. For example, if ADR-003 mandates RabbitMQ for async messaging but a new service uses Redis Pub/Sub instead, the evaluation flags the violation with file locations and the originating ADR number. This catches architectural drift before it compounds across teams and services.</p>
+    </div>
+
+    <h2>ADRs and Tracks</h2>
+    <p>A track (a feature, fix, or refactor managed by Draft) may generate one or more ADRs during its lifecycle. When <code>/draft:plan</code> surfaces a technology choice or <code>/draft:decompose</code> reveals an architectural trade-off, those decisions are ADR candidates.</p>
+
+    <p>ADRs created during a track reference the track in their context section. This creates bidirectional traceability: the ADR explains why a decision was made, and the track's spec or plan references the ADR number for any reader who wants the full context.</p>
+
+    <h2>Superseding Decisions</h2>
+    <p>Decisions change. What was correct six months ago may be wrong today because the constraints have shifted. Draft handles this through explicit supersession rather than silent overwriting.</p>
+
+    <p>When you run <code>/draft:adr supersede 3</code>, Draft updates ADR-003's status to "Superseded by ADR-007" and adds a reference link. The new ADR-007 includes "Supersedes ADR-003" in its references. Both documents are preserved. The old reasoning is not lost &mdash; it becomes historical context that explains the evolution of the system's architecture.</p>
+
+    <div class="callout callout-tip">
+        <div class="callout-title">Integration With Other Context Files</div>
+        <p>When an ADR introduces a new technology, Draft suggests updating <code>draft/tech-stack.md</code>. When an ADR changes architectural patterns, Draft suggests updating <code>draft/architecture.md</code> (which triggers regeneration of <code>.ai-context.md</code> via the Condensation Subroutine). ADRs feed back into the living context that constrains future AI interactions.</p>
+    </div>
+</div>
